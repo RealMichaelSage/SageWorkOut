@@ -1,0 +1,14 @@
+{
+  "name": "sageworkout-watch",
+  "version": "1.0.0",
+  "description": "SAGEWorkOut for Mi Band 9",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "SAGE",
+  "license": "ISC",
+  "dependencies": {
+    "@zeppos/zeus-cli": "latest"
+  }
+}
