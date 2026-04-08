@@ -236,6 +236,18 @@ function renderView() {
 }
 
 function renderToday(state, container) {
+  if (state.saved.done) {
+    container.innerHTML = `
+      <div class="glass-card success-view">
+        <div class="success-icon">🔥</div>
+        <h1 class="success-msg">На сегодня всё:<br>ты охуенен!</h1>
+        <p>Отличная работа. Увидимся на следующей тренировке.</p>
+        <button class="reset-workout-btn" onclick="resetWorkout()">Смотреть тренировку снова</button>
+      </div>
+    `;
+    return;
+  }
+
   let html = `
     <header class="glass-card">
       <h1>${state.monthName} 2026</h1>
@@ -678,8 +690,17 @@ window.closeTimer = () => {
 };
 
 window.finishWorkout = () => {
-  alert("Тренировка сохранена! Вы молодец!");
+  const state = getCurrentState();
+  state.saved.done = true;
+  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
   location.reload();
+};
+
+window.resetWorkout = () => {
+  const state = getCurrentState();
+  state.saved.done = false;
+  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+  renderView();
 };
 
 function setupNav() {
