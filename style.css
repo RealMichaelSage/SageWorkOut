@@ -1,27 +1,35 @@
 :root {
-  --bg-color: #0f0c29;
-  --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  --glass-bg: rgba(255, 255, 255, 0.05);
+  --bg-color: #212121;
+  --bg-gradient: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+  --glass-bg: rgba(45, 45, 45, 0.7);
   --glass-border: rgba(255, 255, 255, 0.1);
-  --accent-primary: #8e2de2;
-  --accent-secondary: #4a00e0;
+  --accent-primary: #dc4d47;
+  --accent-secondary: #ff6b66;
   --accent-success: #00f2fe;
-  --text-main: #ffffff;
+  --text-main: #e8e8e8;
   --text-muted: #b0b0b0;
   --warning-bg: rgba(255, 71, 87, 0.2);
   --warning-border: #ff4757;
+  --accent-glow: rgba(220, 77, 71, 0.3);
+  --font-header: 'Montserrat', sans-serif;
+  --font-body: 'Nunito', sans-serif;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: var(--font-body);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-header);
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 body {
-  background: var(--bg-gradient);
-  background-attachment: fixed;
+  background: var(--bg-color);
   color: var(--text-main);
   min-height: 100vh;
   padding-top: calc(70px + env(safe-area-inset-top));
@@ -39,7 +47,7 @@ body {
   left: 0;
   right: 0;
   height: calc(70px + env(safe-area-inset-bottom));
-  background: rgba(15, 12, 41, 0.85);
+  background: rgba(33, 33, 33, 0.95);
   backdrop-filter: blur(25px);
   z-index: 1000;
   display: flex;
@@ -66,7 +74,7 @@ body {
 .tab-btn.active {
   color: var(--text-main);
   background: var(--glass-bg);
-  box-shadow: 0 0 15px rgba(142, 45, 226, 0.3);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 #app-container {
@@ -90,7 +98,7 @@ body {
 header h1 {
   font-size: 2rem;
   font-weight: 800;
-  background: linear-gradient(to right, #00f2fe, #4facfe);
+  background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -125,7 +133,7 @@ header h1 {
   color: white;
   border: none;
   font-weight: 600;
-  box-shadow: 0 4px 15px rgba(142, 45, 226, 0.3);
+  box-shadow: 0 4px 15px var(--accent-glow);
 }
 
 .exercise-list {
@@ -203,8 +211,8 @@ header h1 {
 }
 
 .set-item.completed {
-  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-  color: #0f0c29;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  color: white;
   border: none;
   transform: scale(0.95);
 }
@@ -282,7 +290,7 @@ header h1 {
 input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: var(--accent-success);
+  accent-color: var(--accent-primary);
 }
 
 /* Calendar Specific Styles */
@@ -340,8 +348,8 @@ input[type="checkbox"] {
 }
 
 .day-cell.today {
-  border-color: var(--accent-success);
-  background: rgba(0, 242, 254, 0.1);
+  border-color: var(--accent-primary);
+  background: var(--accent-glow);
   font-weight: 800;
 }
 
