@@ -327,7 +327,7 @@ function renderMain(state) {
   let html = `<div class="glass-card fade-in"><h2>2. Основной блок</h2><p class="warning-banner">⚠️ <strong>Михаил, внимание!</strong> Онемение мизинца = СТОП.</p>`;
   if (vol.pu) html += renderExercise("pushups", "Отжимания", vol.pu, s.pushups || []);
   if (vol.sq) html += renderExercise("squats", "Приседания", vol.sq, s.squats || []);
-  if (vol.plups) html += renderExercise("pullups", "Подтягивания", vol.plups, s.plups || []);
+  if (vol.plups) html += renderExercise("pullups", "Подтягивания", vol.plups, s.pullups || []);
   if (vol.pl) html += renderExercise("plank", "Планка", vol.pl, s.plank || []);
   html += `<button class="primary-btn" onclick="goToStep('cooldown')">К заминке</button></div>`;
   return html;

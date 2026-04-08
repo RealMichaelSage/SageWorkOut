@@ -1,10 +1,12 @@
-const CACHE_NAME = 'sageworkout-v1';
+const CACHE_NAME = 'sageworkout-v3';
 const ASSETS = [
+  './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  './assets/icon-192.png'
+  './assets/icon-192.png',
+  './assets/icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
