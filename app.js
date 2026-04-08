@@ -327,7 +327,7 @@ function renderMain(state) {
   let html = `<div class="glass-card fade-in"><h2>2. Основной блок</h2><p class="warning-banner">⚠️ <strong>Михаил, внимание!</strong> Онемение мизинца = СТОП.</p>`;
   if (vol.pu) html += renderExercise("pushups", "Отжимания", vol.pu, s.pushups || []);
   if (vol.sq) html += renderExercise("squats", "Приседания", vol.sq, s.squats || []);
-  if (vol.plups) html += renderExercise("pullups", "Подтягивания", vol.plups, s.pullups || []);
+  if (vol.plups) html += renderExercise("pullups", "Подтягивания", vol.plups, s.plups || []);
   if (vol.pl) html += renderExercise("plank", "Планка", vol.pl, s.plank || []);
   html += `<button class="primary-btn" onclick="goToStep('cooldown')">К заминке</button></div>`;
   return html;
@@ -437,4 +437,13 @@ window.finishWorkout = () => {
 
 function setupNav() {
   document.querySelectorAll(".nav-btn").forEach(btn => btn.onclick = () => goToStep(btn.dataset.step));
+}
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW Registered', reg))
+      .catch(err => console.log('SW Error', err));
+  });
 }
