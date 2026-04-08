@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sageworkout-v10';
+const CACHE_NAME = 'sageworkout-v11';
 const ASSETS = [
   './',
   './index.html',

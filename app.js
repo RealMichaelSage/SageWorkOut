@@ -30,7 +30,17 @@ let calendarDate = new Date();
 
 // PWA & Effects Setup
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js');
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.onupdatefound = () => {
+      const newSW = reg.installing;
+      newSW.onstatechange = () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          // New SW found, reload to apply
+          window.location.reload();
+        }
+      };
+    };
+  });
 }
 
 function playTimerSound() {
