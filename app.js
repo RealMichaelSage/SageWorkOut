@@ -127,6 +127,26 @@ window.closeInfo = () => {
   const modal = document.querySelector('.modal-overlay');
   if (modal) modal.remove();
 };
+function getDateKey(date) {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const d = date.getDate().toString().padStart(2, '0');
+  return `sage_workout_${y}-${m}-${d}`;
+}
+
+function getFirstLogDate() {
+  let earliest = new Date();
+  earliest.setHours(0,0,0,0);
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith("sage_workout_")) {
+      const dateStr = key.replace("sage_workout_", "");
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime()) && d < earliest) earliest = d;
+    }
+  }
+  return earliest;
+}
 
 function getCurrentState(dateOverride) {
   const now = dateOverride || new Date();
@@ -143,7 +163,7 @@ function getCurrentState(dateOverride) {
   else if (type === "Восстановление") currentVolume = { pl: data.volume.pl };
   else if (type === "Отдых") currentVolume = null;
 
-  const dateKey = `sage_workout_${now.toISOString().split('T')[0]}`;
+  const dateKey = getDateKey(now);
   const savedData = JSON.parse(localStorage.getItem(dateKey) || "{}");
 
   return { date: now, dateKey, type, monthName, goal: data, volume: currentVolume, saved: savedData };
@@ -165,6 +185,8 @@ function getMonthlyStats(monthOffset = 0) {
   const today = new Date();
   today.setHours(0,0,0,0);
   
+  const firstLogDate = getFirstLogDate();
+
   let pushups = 0, squats = 0, pullups = 0, plankSeconds = 0;
   let completedCount = 0, missedCount = 0, restCount = 0;
   const notes = [];
@@ -172,7 +194,7 @@ function getMonthlyStats(monthOffset = 0) {
   for (let d = 1; d <= daysInMonth; d++) {
     const curDate = new Date(year, month, d);
     const type = getDayType(curDate);
-    const dateKey = `sage_workout_${curDate.toISOString().split('T')[0]}`;
+    const dateKey = getDateKey(curDate);
     const saved = JSON.parse(localStorage.getItem(dateKey) || "{}");
     
     // Stats for volume
@@ -198,8 +220,8 @@ function getMonthlyStats(monthOffset = 0) {
     } else {
       if (saved.done) {
         completedCount++;
-      } else if (curDate < today) {
-        // If it was a workout day in the past and not finished, check if ANY work was done
+      } else if (curDate < today && curDate >= firstLogDate) {
+        // If it was a workout day in the past (after first join) and not finished, count as missed
         const workDone = saved.warmup?.some(v => v) || 
                          saved.main?.pushups?.some(v => v) || 
                          saved.main?.squats?.some(v => v) ||
@@ -401,7 +423,7 @@ function renderHistoryView(container) {
     </div>
 
     <section class="glass-card fade-in">
-      <h2 class="section-title">📊 Прогресс за месяц</h2>
+      <h2 class="section-title">📊 Месячный объем (накопительно)</h2>
       ${renderProgressBar("Отжимания", stats.pushups, 1000)}
       ${renderProgressBar("Приседания", stats.squats, 2000)}
       ${renderProgressBar("Подтягивания", stats.pullups, 1000)}
