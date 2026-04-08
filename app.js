@@ -139,6 +139,57 @@ function getCurrentState(dateOverride) {
   return { date: now, dateKey, type, monthName, goal: data, volume: currentVolume, saved: savedData };
 }
 
+function getMonthlyStats(monthOffset = 0) {
+  const targetDate = new Date();
+  targetDate.setMonth(targetDate.getMonth() - monthOffset);
+  const month = targetDate.getMonth();
+  const year = targetDate.getFullYear();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  let pushups = 0, squats = 0, pullups = 0;
+  const notes = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const curDate = new Date(year, month, d);
+    const dateKey = `sage_workout_${curDate.toISOString().split('T')[0]}`;
+    const saved = JSON.parse(localStorage.getItem(dateKey) || "{}");
+    
+    if (saved.main) {
+      if (saved.main.pushups) {
+        const goal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]).volume.pu;
+        saved.main.pushups.forEach((done, i) => { if (done) pushups += goal[i] || 0; });
+      }
+      if (saved.main.squats) {
+        const goal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]).volume.sq;
+        saved.main.squats.forEach((done, i) => { if (done) squats += goal[i] || 0; });
+      }
+      if (saved.main.pullups) {
+        const goal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]).volume.plups;
+        saved.main.pullups.forEach((done, i) => { if (done) pullups += goal[i] || 0; });
+      }
+    }
+    if (saved.note) {
+      notes.push({ date: curDate.toLocaleDateString("ru-RU"), text: saved.note });
+    }
+  }
+  return { pushups, squats, pullups, notes };
+}
+
+function getGrowthData() {
+  const labels = [];
+  const data = { pu: [], sq: [], plups: [] };
+  for (let i = 2; i >= 0; i--) {
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    labels.push(MONTH_NAMES[date.getMonth()].substring(0, 3));
+    const stats = getMonthlyStats(i);
+    data.pu.push(stats.pushups);
+    data.sq.push(stats.squats);
+    data.plups.push(stats.pullups);
+  }
+  return { labels, data };
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setupMainTabs();
   renderView();
@@ -170,7 +221,7 @@ function renderView() {
   if (currentView === "today") {
     renderToday(state, container);
   } else {
-    renderCalendarView(container);
+    renderHistoryView(container);
   }
 }
 
@@ -186,6 +237,12 @@ function renderToday(state, container) {
     html += `<section class="glass-card center"><h2>Время заслуженного отдыха! 🛋️</h2><p>Расслабьтесь и восстановитесь.</p></section>`;
   } else {
     html += `
+      <div class="session-progress-container">
+        <div class="session-progress-track">
+          <div class="session-progress-fill" id="session-progress-fill"></div>
+        </div>
+        <div class="session-progress-text" id="session-progress-text">Прогресс: 0%</div>
+      </div>
       <section class="workout-navigator">
         <button class="nav-btn active" data-step="warmup">Разминка</button>
         <button class="nav-btn" data-step="main">Основной блок</button>
@@ -196,9 +253,147 @@ function renderToday(state, container) {
   }
   container.innerHTML = html;
   setupNav();
+  updateSessionProgress();
 }
 
-function renderCalendarView(container) {
+function updateSessionProgress() {
+  const state = getCurrentState();
+  if (!state.volume || state.type === "Отдых") return;
+
+  let total = 0;
+  let completed = 0;
+
+  // Warmup (4 items)
+  total += 4;
+  if (state.saved.warmup) {
+    state.saved.warmup.forEach(v => { if (v) completed++; });
+  }
+
+  // Main
+  if (state.volume.pu) {
+    total += state.volume.pu.length;
+    if (state.saved.main && state.saved.main.pushups) {
+      state.saved.main.pushups.forEach(v => { if (v) completed++; });
+    }
+  }
+  if (state.volume.sq) {
+    total += state.volume.sq.length;
+    if (state.saved.main && state.saved.main.squats) {
+      state.saved.main.squats.forEach(v => { if (v) completed++; });
+    }
+  }
+  if (state.volume.plups) {
+    total += state.volume.plups.length;
+    if (state.saved.main && state.saved.main.pullups) {
+      state.saved.main.pullups.forEach(v => { if (v) completed++; });
+    }
+  }
+  if (state.volume.pl) {
+    total += state.volume.pl.length;
+    if (state.saved.main && state.saved.main.plank) {
+      state.saved.main.plank.forEach(v => { if (v) completed++; });
+    }
+  }
+
+  // Cooldown (3 items)
+  total += 3;
+  if (state.saved.cooldown) {
+    state.saved.cooldown.forEach(v => { if (v) completed++; });
+  }
+
+  const percent = Math.min(Math.round((completed / total) * 100), 100);
+  const fill = document.getElementById("session-progress-fill");
+  const text = document.getElementById("session-progress-text");
+  
+  if (fill) fill.style.width = `${percent}%`;
+  if (text) text.innerText = `Прогресс: ${percent}%`;
+}
+
+function renderHistoryView(container) {
+  const stats = getMonthlyStats();
+  const state = getCurrentState();
+  const growth = getGrowthData();
+  
+  let html = `
+    <div class="history-today-badge fade-in">
+      <h3>Статус на сегодня</h3>
+      <div class="status-text">${state.date.toLocaleDateString("ru-RU", {weekday:'short'})}: ${state.type}</div>
+    </div>
+
+    <section class="glass-card fade-in">
+      <h2 class="section-title">📊 Прогресс за месяц</h2>
+      ${renderProgressBar("Отжимания", stats.pushups, 1000)}
+      ${renderProgressBar("Приседания", stats.squats, 2000)}
+      ${renderProgressBar("Подтягивания", stats.pullups, 1000)}
+      <p class="tip" style="text-align:center; margin-top:10px">Цели: 1000 / 2000 / 1000 (накопленный объем)</p>
+    </section>
+
+    <section class="glass-card fade-in">
+      <h2 class="section-title">📈 Рост повторений</h2>
+      <div class="chart-container">
+        ${renderSVGChart(growth.data.pu, growth.data.sq, growth.data.plups)}
+      </div>
+      <div class="chart-labels">
+        ${growth.labels.map(l => `<span>${l}</span>`).join('')}
+      </div>
+    </section>
+
+    <div class="glass-card fade-in">
+      <div class="calendar-header">
+        <button class="cal-nav-btn" onclick="changeCalMonth(-1)">←</button>
+        <h2>${MONTH_NAMES[calendarDate.getMonth()]} ${calendarDate.getFullYear()}</h2>
+        <button class="cal-nav-btn" onclick="changeCalMonth(1)">→</button>
+      </div>
+      <div class="calendar-grid">
+        <div class="weekday">ПН</div><div class="weekday">ВТ</div><div class="weekday">СР</div>
+        <div class="weekday">ЧТ</div><div class="weekday">ПТ</div><div class="weekday">СБ</div><div class="weekday">ВС</div>
+  `;
+
+  html += renderCalendarGrid();
+  html += `</div></div>`;
+
+  if (stats.notes.length > 0) {
+    html += `
+      <section class="glass-card fade-in">
+        <h2 class="section-title">📝 Архив заметок</h2>
+        <div class="notes-archive-list">
+          ${stats.notes.map(n => `<div class="note-card"><div class="note-date">${n.date}</div><div class="note-text">${n.text}</div></div>`).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+function renderProgressBar(label, current, goal) {
+  const percent = Math.min(Math.round((current / goal) * 100), 100);
+  return `
+    <div class="progress-goal-item">
+      <div class="goal-info">
+        <span>${label}</span>
+        <span><strong>${current}</strong> / ${goal}</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width: ${percent}%"></div></div>
+    </div>
+  `;
+}
+
+function renderSVGChart(pu, sq, plups) {
+  const max = Math.max(...pu, ...sq, ...plups, 100) * 1.2;
+  const points = (arr) => arr.map((v, i) => `${(i / (arr.length - 1)) * 100},${100 - (v / max) * 100}`).join(' ');
+  
+  return `
+    <svg viewBox="0 0 100 100" class="chart-svg" preserveAspectRatio="none">
+      <polyline points="${points(pu)}" class="chart-line" />
+      <polyline points="${points(sq)}" class="chart-line" style="stroke: var(--accent-success)" />
+      <polyline points="${points(plups)}" class="chart-line" style="stroke: var(--accent-secondary)" />
+      ${pu.map((v, i) => `<circle cx="${(i / (pu.length - 1)) * 100}" cy="${100 - (v / max) * 100}" r="2" class="chart-point" />`).join('')}
+    </svg>
+  `;
+}
+
+function renderCalendarGrid() {
   const month = calendarDate.getMonth();
   const year = calendarDate.getFullYear();
   const firstDay = new Date(year, month, 1).getDay();
@@ -207,23 +402,11 @@ function renderCalendarView(container) {
   
   const startOffset = (firstDay === 0 ? 7 : firstDay) - 1;
   const totalCells = 42;
-  
-  let html = `
-    <div class="glass-card fade-in">
-      <div class="calendar-header">
-        <button class="cal-nav-btn" onclick="changeCalMonth(-1)">←</button>
-        <h2>${MONTH_NAMES[month]} ${year}</h2>
-        <button class="cal-nav-btn" onclick="changeCalMonth(1)">→</button>
-      </div>
-      <div class="calendar-grid">
-        <div class="weekday">ПН</div><div class="weekday">ВТ</div><div class="weekday">СР</div>
-        <div class="weekday">ЧТ</div><div class="weekday">ПТ</div><div class="weekday">СБ</div><div class="weekday">ВС</div>
-  `;
+  let html = '';
 
   for (let i = 0; i < totalCells; i++) {
     const dayIndex = i - startOffset + 1;
-    let currentDay, isOtherMonth = false;
-    let d;
+    let currentDay, isOtherMonth = false, d;
     
     if (dayIndex <= 0) {
       currentDay = prevDaysInMonth + dayIndex;
@@ -242,20 +425,28 @@ function renderCalendarView(container) {
     const saved = JSON.parse(localStorage.getItem(dateKey) || "{}");
     const todayStr = new Date().toISOString().split('T')[0];
     const isToday = d.toISOString().split('T')[0] === todayStr;
+    const isPast = d < new Date(todayStr);
     const type = getDayType(d);
     
     let dots = [];
+    let extraClass = '';
+    
     if (!isOtherMonth) {
       if (type === "Объем") dots.push("dot-volume");
       else if (type === "Техника") dots.push("dot-tech");
       
-      if (saved.main && Object.keys(saved.main).length > 0) {
-         dots.push("dot-completed");
+      const isCompleted = saved.main && Object.values(saved.main).some(arr => arr.includes(true));
+      if (isCompleted) {
+        dots.push("dot-completed");
+      } else if (isPast && type !== "Отдых") {
+        extraClass = 'missed';
       }
+      
+      if (saved.note) dots.push("dot-note");
     }
 
     html += `
-      <div class="day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}">
+      <div class="day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${extraClass}">
         ${currentDay}
         <div class="status-dots">
           ${dots.map(dot => `<div class="status-dot ${dot}"></div>`).join('')}
@@ -263,9 +454,7 @@ function renderCalendarView(container) {
       </div>
     `;
   }
-
-  html += `</div></div>`;
-  container.innerHTML = html;
+  return html;
 }
 
 function getDayType(date) {
@@ -375,16 +564,27 @@ function renderCooldown(state) {
           </label>
         </li>
       </ul>
-      <button class="primary-btn" onclick="goToStep('warmup')">Завершить</button>
+      <section class="wellness-note-box">
+        <h3>Заметки о самочувствии</h3>
+        <textarea class="wellness-textarea" id="wellness-note" placeholder="Была ли боль? Дискомфорт? Напишите здесь..." oninput="saveNote(this.value)">${state.saved.note || ''}</textarea>
+      </section>
+      <button class="primary-btn success" onclick="finishWorkout()">Завершить тренировку</button>
     </div>
   `;
 }
+
+window.saveNote = (text) => {
+  const state = getCurrentState();
+  state.saved.note = text;
+  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+};
 
 window.saveCheck = (sec, idx, el) => {
   const state = getCurrentState();
   if (!state.saved[sec]) state.saved[sec] = [];
   state.saved[sec][idx] = el.checked;
   localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+  updateSessionProgress();
 };
 
 window.toggleSet = (exId, idx, el) => {
@@ -396,6 +596,7 @@ window.toggleSet = (exId, idx, el) => {
   state.saved.main[exId][idx] = el.classList.contains("completed");
   localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
   
+  updateSessionProgress();
   if (el.classList.contains("completed")) startTimer(60);
 };
 
