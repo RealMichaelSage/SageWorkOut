@@ -110,12 +110,13 @@ header h1 {
   font-size: 0.9rem;
 }
 
+
 .workout-navigator {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 0;
-  margin-bottom: 20px;
+  padding: 10px 15px 20px 15px;
+  margin: -10px 0 10px 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
