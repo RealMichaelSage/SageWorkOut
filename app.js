@@ -530,7 +530,7 @@ function renderExercise(id, name, sets, saved) {
         <button class="info-btn" onclick="showInfo('${name}')">i</button>
       </div>
       <div class="sets-grid">
-        ${sets.map((reps, i) => `<div class="set-item ${saved[i]?'completed':''}" onclick="toggleSet('${id}', ${i}, this)">${reps}</div>`).join('')}
+        ${sets.map((reps, i) => `<div class="set-item ${saved[i]?'completed':''}" onclick="toggleSet('${id}', ${i}, this, ${reps})">${reps}</div>`).join('')}
       </div>
     </div>
   `;
@@ -587,17 +587,53 @@ window.saveCheck = (sec, idx, el) => {
   updateSessionProgress();
 };
 
-window.toggleSet = (exId, idx, el) => {
+window.toggleSet = (exId, idx, el, reps) => {
   const state = getCurrentState();
   if (!state.saved.main) state.saved.main = {};
   if (!state.saved.main[exId]) state.saved.main[exId] = [];
   
-  el.classList.toggle("completed");
-  state.saved.main[exId][idx] = el.classList.contains("completed");
+  if (el.classList.contains("completed")) {
+    el.classList.remove("completed");
+    state.saved.main[exId][idx] = false;
+    localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+    updateSessionProgress();
+  } else {
+    startExecution(exId, idx, el, reps);
+  }
+};
+
+function startExecution(exId, idx, el, reps) {
+  const overlay = document.createElement("div");
+  overlay.className = "execution-overlay fade-in";
+  overlay.id = "execution-overlay";
+  overlay.innerHTML = `
+    <div class="execution-box">
+      <h2>Выполняю</h2>
+      <div class="execution-reps">${reps}</div>
+      <button class="finish-set-btn" onclick="finishExecution('${exId}', ${idx}, this)">ЗАВЕРШИТЬ</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  
+  // Store the target element on the overlay for access during finish
+  overlay.targetEl = el;
+}
+
+window.finishExecution = (exId, idx, btn) => {
+  const overlay = document.getElementById("execution-overlay");
+  const el = overlay.targetEl;
+  const state = getCurrentState();
+  
+  if (!state.saved.main) state.saved.main = {};
+  if (!state.saved.main[exId]) state.saved.main[exId] = [];
+
+  el.classList.add("completed");
+  state.saved.main[exId][idx] = true;
   localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
   
+  overlay.remove();
   updateSessionProgress();
-  if (el.classList.contains("completed")) startTimer(60);
+  startTimer(60);
 };
 
 window.goToStep = (step) => {
