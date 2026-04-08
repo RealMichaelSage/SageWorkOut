@@ -114,7 +114,14 @@ header h1 {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 5px;
+  padding-bottom: 0;
+  margin-bottom: 20px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.workout-navigator::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-btn {
