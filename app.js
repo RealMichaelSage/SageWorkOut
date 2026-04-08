@@ -149,40 +149,70 @@ function getCurrentState(dateOverride) {
   return { date: now, dateKey, type, monthName, goal: data, volume: currentVolume, saved: savedData };
 }
 
+function formatSeconds(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+}
+
 function getMonthlyStats(monthOffset = 0) {
   const targetDate = new Date();
   targetDate.setMonth(targetDate.getMonth() - monthOffset);
   const month = targetDate.getMonth();
   const year = targetDate.getFullYear();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  today.setHours(0,0,0,0);
   
-  let pushups = 0, squats = 0, pullups = 0;
+  let pushups = 0, squats = 0, pullups = 0, plankSeconds = 0;
+  let completedCount = 0, missedCount = 0, restCount = 0;
   const notes = [];
 
   for (let d = 1; d <= daysInMonth; d++) {
     const curDate = new Date(year, month, d);
+    const type = getDayType(curDate);
     const dateKey = `sage_workout_${curDate.toISOString().split('T')[0]}`;
     const saved = JSON.parse(localStorage.getItem(dateKey) || "{}");
     
+    // Stats for volume
     if (saved.main) {
+      const monthGoal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]).volume;
       if (saved.main.pushups) {
-        const goal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]).volume.pu;
-        saved.main.pushups.forEach((done, i) => { if (done) pushups += goal[i] || 0; });
+        saved.main.pushups.forEach((done, i) => { if (done) pushups += monthGoal.pu[i] || 0; });
       }
       if (saved.main.squats) {
-        const goal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]).volume.sq;
-        saved.main.squats.forEach((done, i) => { if (done) squats += goal[i] || 0; });
+        saved.main.squats.forEach((done, i) => { if (done) squats += monthGoal.sq[i] || 0; });
       }
       if (saved.main.pullups) {
-        const goal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]).volume.plups;
-        saved.main.pullups.forEach((done, i) => { if (done) pullups += goal[i] || 0; });
+        saved.main.pullups.forEach((done, i) => { if (done) pullups += monthGoal.plups[i] || 0; });
+      }
+      if (saved.main.plank) {
+        saved.main.plank.forEach((done, i) => { if (done) plankSeconds += monthGoal.pl[i] || 0; });
       }
     }
+
+    // Advanced Stats
+    if (type === "Отдых") {
+      restCount++;
+    } else {
+      if (saved.done) {
+        completedCount++;
+      } else if (curDate < today) {
+        // If it was a workout day in the past and not finished, check if ANY work was done
+        const workDone = saved.warmup?.some(v => v) || 
+                         saved.main?.pushups?.some(v => v) || 
+                         saved.main?.squats?.some(v => v) ||
+                         saved.main?.pullups?.some(v => v);
+        if (!workDone) missedCount++;
+      }
+    }
+
     if (saved.note) {
       notes.push({ date: curDate.toLocaleDateString("ru-RU"), text: saved.note });
     }
   }
-  return { pushups, squats, pullups, notes };
+  return { pushups, squats, pullups, plankSeconds, completedCount, missedCount, restCount, notes };
 }
 
 function getGrowthData() {
@@ -340,6 +370,34 @@ function renderHistoryView(container) {
     <div class="history-today-badge fade-in">
       <h3>Статус на сегодня</h3>
       <div class="status-text">${state.date.toLocaleDateString("ru-RU", {weekday:'short'})}: ${state.type}</div>
+    </div>
+
+    <div class="stats-grid fade-in">
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">${stats.completedCount}</div>
+        <div class="stat-label">Сделано</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">❌</div>
+        <div class="stat-value">${stats.missedCount}</div>
+        <div class="stat-label">Пропущено</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🛋️</div>
+        <div class="stat-value">${stats.restCount}</div>
+        <div class="stat-label">Отдых</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-value">${stats.completedCount + stats.missedCount}</div>
+        <div class="stat-label">Всего</div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-icon">🧘 Планка (всего за месяц)</div>
+        <div class="stat-value stat-value-large">${formatSeconds(stats.plankSeconds)}</div>
+        <div class="stat-label">Общее время выносливости</div>
+      </div>
     </div>
 
     <section class="glass-card fade-in">
