@@ -198,9 +198,11 @@ function getMonthlyStats(monthOffset = 0) {
         });
       }
     }
-    if (saved && saved.core && Array.isArray(saved.core) && saved.core[0]) {
+    if (saved && saved.core && Array.isArray(saved.core)) {
       const monthGoal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]);
-      plankSeconds += (monthGoal.pl && monthGoal.pl[0]) ? monthGoal.pl[0] : 0;
+      saved.core.forEach((val, i) => {
+        if (val === true) plankSeconds += monthGoal.pl[i] || 0;
+      });
     }
 
     if (type === "Выходной") {
@@ -388,8 +390,10 @@ function updateSessionProgress() {
     if (state.saved.main && state.saved.main.sq) state.saved.main.sq.forEach(v => { if (v) completed++; });
   }
   if (state.volume.pl) {
-    total += 1;
-    if (state.saved.core && state.saved.core[0]) completed++;
+    total += state.volume.pl.length;
+    if (state.saved.core && Array.isArray(state.saved.core)) {
+      state.saved.core.forEach(v => { if (v) completed++; });
+    }
   }
   total += 4;
   if (state.saved.cooldown) state.saved.cooldown.forEach(v => { if (v) completed++; });
@@ -537,8 +541,41 @@ function renderMain(state) {
 }
 
 function renderCore(state) {
-  const target = state.volume.pl[0], isDone = state.saved.core && state.saved.core[0];
-  return `<div class="glass-card core-timer-view fade-in"><h2>3. Core</h2><div class="timer-circle ${isDone ? 'active' : ''}" id="plank-timer-circle"><span class="timer-value" id="plank-timer-value">${target}</span></div>${isDone ? '<p>✅ Готово!</p>' : `<button class="primary-btn" id="plank-start-btn" onclick="startPlankTimer(${target})">СТАРТ</button>`}<button class="primary-btn" onclick="goToNextStep('core')">Далее</button></div>`;
+  const vol = state.volume, s = state.saved.core || [];
+  
+  const renderPlankTiles = (repsArr) => `
+    <div class="set-tiles">
+      ${repsArr.map((seconds, i) => {
+        const done = s[i];
+        return `
+          <div class="set-tile ${done ? 'completed' : ''}" 
+               onclick="togglePlankSet(${i}, this, ${seconds})">
+            <span class="reps">${seconds}s</span>
+            <span class="label">Сет ${i+1}</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  return `
+    <div class="glass-card core-timer-view fade-in">
+      <h2>3. Core</h2>
+      <p class="subtitle" style="margin-bottom:20px">Цель: ${vol.pl.length} сета по ${vol.pl[0]} сек</p>
+      
+      <div id="plank-active-timer" style="display:none">
+        <div class="timer-circle active">
+          <span class="timer-value" id="plank-timer-value">0</span>
+        </div>
+      </div>
+
+      <div id="plank-tiles-container">
+        ${renderPlankTiles(vol.pl)}
+      </div>
+
+      <button class="primary-btn" style="margin-top:30px" onclick="goToNextStep('core')">К заминке</button>
+    </div>
+  `;
 }
 
 function renderCooldown(state) {
@@ -556,9 +593,44 @@ window.saveStrength = (ex, idx, val) => {
   updateGlobalMax(ex, parseInt(val)); updateSessionProgress();
 };
 
-window.startPlankTimer = (seconds) => {
-  const display = document.getElementById("plank-timer-value"); document.getElementById("plank-start-btn").style.display = "none";
-  let timeLeft = seconds; const timer = setInterval(() => { timeLeft--; display.innerText = timeLeft; if (timeLeft <= 0) { clearInterval(timer); playTimerSound(); saveCheck('core', 0, { checked: true }); goToStep('core'); } }, 1000);
+window.togglePlankSet = (idx, el, seconds) => {
+  const state = getCurrentState();
+  if (el.classList.contains("completed")) {
+    if (confirm("Сбросить этот сет?")) {
+      if (!state.saved.core) state.saved.core = [];
+      state.saved.core[idx] = false;
+      localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+      goToStep('core');
+    }
+  } else {
+    document.getElementById("plank-tiles-container").style.display = "none";
+    document.getElementById("plank-active-timer").style.display = "block";
+    startPlankTimer(seconds, idx);
+  }
+};
+
+window.startPlankTimer = (seconds, idx) => {
+  const display = document.getElementById("plank-timer-value");
+  let timeLeft = seconds;
+  display.innerText = timeLeft;
+  
+  const timer = setInterval(() => {
+    timeLeft--;
+    display.innerText = timeLeft;
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      playTimerSound();
+      
+      const state = getCurrentState();
+      if (!state.saved.core) state.saved.core = [];
+      state.saved.core[idx] = true;
+      localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+      
+      // Return to tiles view
+      goToStep('core');
+      startTimer(60); // Rest between plank sets
+    }
+  }, 1000);
 };
 
 function updateGlobalMax(ex, reps) { const key = `sage_max_${ex}`, cur = parseInt(localStorage.getItem(key) || 0); if (reps > cur) localStorage.setItem(key, reps); }
