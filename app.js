@@ -183,24 +183,24 @@ function getMonthlyStats(monthOffset = 0) {
     const dateKey = getDateKey(curDate);
     const saved = JSON.parse(localStorage.getItem(dateKey) || "{}");
     
-    if (saved.main) {
+    if (saved && saved.main) {
       const monthGoal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]);
-      if (saved.main.pu) {
+      if (Array.isArray(saved.main.pu)) {
         saved.main.pu.forEach((val, i) => { 
           if (val === true) pushups += monthGoal.pu[i] || 0;
           else if (val) pushups += parseInt(val) || 0; 
         });
       }
-      if (saved.main.sq) {
+      if (Array.isArray(saved.main.sq)) {
         saved.main.sq.forEach((val, i) => { 
           if (val === true) squats += monthGoal.sq[i] || 0;
           else if (val) squats += parseInt(val) || 0; 
         });
       }
     }
-    if (saved.core && saved.core[0]) {
+    if (saved && saved.core && Array.isArray(saved.core) && saved.core[0]) {
       const monthGoal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]);
-      plankSeconds += monthGoal.pl[0] || 0;
+      plankSeconds += (monthGoal.pl && monthGoal.pl[0]) ? monthGoal.pl[0] : 0;
     }
 
     if (type === "Выходной") {
@@ -451,10 +451,13 @@ function renderProgressBar(label, current, goal) {
   return `<div class="progress-goal-item"><div class="goal-info"><span>${label}</span><span><strong>${current}</strong> / ${goal}</span></div><div class="progress-track"><div class="progress-fill" style="width: ${percent}%"></div></div></div>`;
 }
 
-function renderSVGChart(pu, sq, pl) {
-  const max = Math.max(...pu, ...sq, ...pl, 100) * 1.2;
-  const points = (arr) => arr.length > 1 ? arr.map((v, i) => `${(i / (arr.length - 1)) * 100},${100 - (v / max) * 100}`).join(' ') : `0,${100 - (arr[0] / max) * 100} 100,${100 - (arr[0] / max) * 100}`;
-  return `<svg viewBox="0 0 100 100" class="chart-svg" preserveAspectRatio="none"><polyline points="${points(pu)}" class="chart-line" /><polyline points="${points(sq)}" class="chart-line" style="stroke: var(--accent-success)" /><polyline points="${points(pl)}" class="chart-line" style="stroke: var(--accent-secondary)" />${pu.map((v, i) => `<circle cx="${(i / (Math.max(pu.length - 1, 1))) * 100}" cy="${100 - (v / max) * 100}" r="2" class="chart-point" />`).join('')}</svg>`;
+function renderSVGChart(pu = [], sq = [], pl = []) {
+  const puArr = Array.isArray(pu) ? pu : [];
+  const sqArr = Array.isArray(sq) ? sq : [];
+  const plArr = Array.isArray(pl) ? pl : [];
+  const max = Math.max(...puArr, ...sqArr, ...plArr, 100) * 1.2;
+  const points = (arr) => arr.length > 1 ? arr.map((v, i) => `${(i / (arr.length - 1)) * 100},${100 - (v / max) * 100}`).join(' ') : (arr.length === 1 ? `0,${100 - (arr[0] / max) * 100} 100,${100 - (arr[0] / max) * 100}` : '0,100 100,100');
+  return `<svg viewBox="0 0 100 100" class="chart-svg" preserveAspectRatio="none"><polyline points="${points(puArr)}" class="chart-line" /><polyline points="${points(sqArr)}" class="chart-line" style="stroke: var(--accent-success)" /><polyline points="${points(plArr)}" class="chart-line" style="stroke: var(--accent-secondary)" />${puArr.map((v, i) => `<circle cx="${(i / (Math.max(puArr.length - 1, 1))) * 100}" cy="${100 - (v / max) * 100}" r="2" class="chart-point" />`).join('')}</svg>`;
 }
 
 function renderCalendarGrid() {
