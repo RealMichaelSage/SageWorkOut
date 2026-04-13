@@ -353,7 +353,6 @@ function renderToday(state, container) {
     html += `<button class="nav-btn" data-step="main">Сила</button>`;
   }
   
-  html += `<button class="nav-btn" data-step="core">Core</button>`;
   html += `<button class="nav-btn" data-step="cooldown">Заминка</button>`;
   
   html += `</section><div id="workout-content"></div>`;
@@ -503,10 +502,11 @@ function renderMain(state) {
     <div class="set-tiles">
       ${repsArr.map((reps, i) => {
         const done = s[exId] && s[exId][i];
+        const isPlank = exId === 'pl';
         return `
           <div class="set-tile ${done ? 'completed' : ''}" 
-               onclick="toggleSet('${exId}', ${i}, this, ${reps})">
-            <span class="reps">${reps}</span>
+               onclick="${isPlank ? `togglePlankSet(${i}, this, ${reps})` : `toggleSet('${exId}', ${i}, this, ${reps})`}">
+            <span class="reps">${reps}${isPlank ? 's' : ''}</span>
             <span class="label">Сет ${i+1}</span>
           </div>
         `;
@@ -516,9 +516,15 @@ function renderMain(state) {
 
   return `
     <div class="glass-card fade-in">
-      <h2>2. Сила</h2>
+      <h2>2. Сила и Core</h2>
       <p class="warning-banner">⚠️ <strong>Техника превыше всего!</strong> Если локоть покалывает — не разгибай до щелчка.</p>
       
+      <div id="plank-active-timer" style="display:none; margin: 20px 0;">
+        <div class="timer-circle active">
+          <span class="timer-value" id="plank-timer-value">0</span>
+        </div>
+      </div>
+
       <div class="exercise-block">
         <div class="exercise-header-row">
           <h3>Отжимания («Замок»)</h3>
@@ -535,48 +541,19 @@ function renderMain(state) {
         ${renderSets('sq', vol.sq)}
       </div>
 
-      <button class="primary-btn" style="margin-top:30px" onclick="goToNextStep('main')">К блоку Core</button>
-    </div>
-  `;
-}
-
-function renderCore(state) {
-  const vol = state.volume, s = state.saved.core || [];
-  
-  const renderPlankTiles = (repsArr) => `
-    <div class="set-tiles">
-      ${repsArr.map((seconds, i) => {
-        const done = s[i];
-        return `
-          <div class="set-tile ${done ? 'completed' : ''}" 
-               onclick="togglePlankSet(${i}, this, ${seconds})">
-            <span class="reps">${seconds}s</span>
-            <span class="label">Сет ${i+1}</span>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-
-  return `
-    <div class="glass-card core-timer-view fade-in">
-      <h2>3. Core</h2>
-      <p class="subtitle" style="margin-bottom:20px">Цель: ${vol.pl.length} сета по ${vol.pl[0]} сек</p>
-      
-      <div id="plank-active-timer" style="display:none">
-        <div class="timer-circle active">
-          <span class="timer-value" id="plank-timer-value">0</span>
+      <div class="exercise-block" style="margin-top:30px" id="plank-tiles-container">
+        <div class="exercise-header-row">
+          <h3>Планка</h3>
+          <button class="info-btn" onclick="showInfo('Планка')">i</button>
         </div>
+        ${renderSets('pl', vol.pl)}
       </div>
 
-      <div id="plank-tiles-container">
-        ${renderPlankTiles(vol.pl)}
-      </div>
-
-      <button class="primary-btn" style="margin-top:30px" onclick="goToNextStep('core')">К заминке</button>
+      <button class="primary-btn" style="margin-top:30px" onclick="goToNextStep('main')">К заминке</button>
     </div>
   `;
 }
+
 
 function renderCooldown(state) {
   const s = state.saved.cooldown || [false, false, false, false];
@@ -636,8 +613,8 @@ window.startPlankTimer = (seconds, idx) => {
 function updateGlobalMax(ex, reps) { const key = `sage_max_${ex}`, cur = parseInt(localStorage.getItem(key) || 0); if (reps > cur) localStorage.setItem(key, reps); }
 
 window.goToNextStep = (current) => {
-  const steps = { 'warmup': 'main', 'main': 'core', 'core': 'cooldown' };
-  const state = getCurrentState(); let next = steps[current]; if (next === 'main' && state.type === 'Восстановление') next = 'core';
+  const steps = { 'warmup': 'main', 'main': 'cooldown' };
+  const state = getCurrentState(); let next = steps[current];
   goToStep(next);
 };
 
@@ -725,7 +702,6 @@ window.goToStep = (step) => {
   const content = document.getElementById("workout-content"), state = getCurrentState();
   if (step === 'warmup') content.innerHTML = renderWarmup(state);
   else if (step === 'main') content.innerHTML = renderMain(state);
-  else if (step === 'core') content.innerHTML = renderCore(state);
   else if (step === 'cooldown') content.innerHTML = renderCooldown(state);
   document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.step === step));
   updateSessionProgress();
