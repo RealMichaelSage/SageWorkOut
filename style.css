@@ -887,3 +887,198 @@ input[type="checkbox"] {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* --- NEW STYLES FROM SPEC --- */
+
+/* Emergency Button */
+.emergency-btn {
+  position: fixed;
+  top: 10px;
+  right: 15px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  z-index: 2100;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.emergency-btn:active {
+  transform: scale(0.95);
+}
+
+/* Locked State */
+.primary-btn.locked {
+  background: #333 !important;
+  color: #666 !important;
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+  box-shadow: none !important;
+}
+
+/* Strength Block Inputs */
+.strength-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+}
+
+.set-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.set-input {
+  width: 70px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--accent-primary);
+  color: white;
+  padding: 6px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.set-input:focus {
+  outline: none;
+  border-color: var(--accent-success);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+}
+
+/* Core / Plank Timer */
+.core-timer-view {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.timer-circle {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 6px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 25px;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.timer-circle.active {
+  border-color: var(--accent-success);
+  box-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
+}
+
+.timer-value {
+  font-size: 3rem;
+  font-weight: 800;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--text-main);
+}
+
+.timer-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Checklist Styling */
+.checklist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+.checklist-item:last-child {
+  border-bottom: none;
+}
+
+.checklist-item span {
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+/* Saturday / Off Screen */
+.off-screen {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.off-screen h2 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+  color: var(--accent-success);
+}
+
+.quote-box {
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-top: 30px;
+  padding: 24px;
+  border-left: 4px solid var(--accent-primary);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0 16px 16px 0;
+  text-align: left;
+}
+
+.safety-rules {
+  margin-top: 30px;
+  text-align: left;
+}
+
+.safety-rules h3 {
+  font-size: 1rem;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.safety-rules ul {
+  list-style: none;
+}
+
+.safety-rules li {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: flex;
+  gap: 10px;
+}
+
+.safety-rules li::before {
+  content: "🛡️";
+}
+

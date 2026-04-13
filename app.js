@@ -1,29 +1,18 @@
 const PROGRAM = {
   months: {
-    "Апрель": { pushups: "5 сетов по 10", squats: "3 сета по 10", pullups: "5 сетов по 1", plank: "3 по 30 сек", volume: { pu: [10, 10, 10, 10, 10], sq: [10, 10, 10], plups: [1, 1, 1, 1, 1], pl: [30, 30, 30] } },
-    "Май": { pushups: "6 сетов по 10", squats: "4 сета по 10", pullups: "6 сетов по 2", plank: "3 по 40 сек", volume: { pu: [10, 10, 10, 10, 10, 10], sq: [10, 10, 10, 10], plups: [2, 2, 2, 2, 2, 2], pl: [40, 40, 40] } },
-    "Июнь": { pushups: "5 сетов по 15", squats: "5 сетов по 15", pullups: "8 сетов по 3", plank: "3 по 50 сек", volume: { pu: [15, 15, 15, 15, 15], sq: [15, 15, 15, 15, 15], plups: [3, 3, 3, 3, 3, 3, 3, 3], pl: [50, 50, 50] } },
-    "Июль": { pushups: "6 сетов по 15", squats: "6 сетов по 20", pullups: "10 сетов по 4", plank: "4 по 45 сек", volume: { pu: [15, 15, 15, 15, 15, 15], sq: [20, 20, 20, 20, 20, 20], plups: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4], pl: [45, 45, 45, 45] } },
-    "Август": { pushups: "5 сетов по 20", squats: "5 сетов по 30", pullups: "10 сетов по 5", plank: "3 по 60 сек", volume: { pu: [20, 20, 20, 20, 20], sq: [30, 30, 30, 30, 30], plups: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5], pl: [60, 60, 60] } },
-    "Сентябрь": { pushups: "4 сета по 25", squats: "6 сетов по 30", pullups: "8 сетов по 8", plank: "4 по 60 сек", volume: { pu: [25, 25, 25, 25], sq: [30, 30, 30, 30, 30, 30], plups: [8, 8, 8, 8, 8, 8, 8, 8], pl: [60, 60, 60, 60] } },
-    "Октябрь": { pushups: "3 сета по 35", squats: "5 сетов по 40", pullups: "10 сетов по 10", plank: "3 по 90 сек", volume: { pu: [35, 35, 35], sq: [40, 40, 40, 40, 40], plups: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10], pl: [90, 90, 90] } },
-    "Ноябрь": { pushups: "2 сета по 50", squats: "4 сета по 50", pullups: "5 сетов по 15 + добор", plank: "3 по 100 сек", volume: { pu: [50, 50], sq: [50, 50, 50, 50], plups: [15, 15, 15, 15, 15, 25], pl: [100, 100, 100] } },
-    "Декабрь": { pushups: "1 сет по 100", squats: "4 сета по 50", pullups: "10 сетов по 10", plank: "3 по 120 сек", volume: { pu: [100], sq: [50, 50, 50, 50], plups: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10], pl: [120, 120, 120] } }
+    "Апрель": { pu: [10, 10, 10, 10, 10], sq: [10, 10, 10], pl: [30, 30, 30] },
+    "Май": { pu: [10, 10, 10, 10, 10, 10], sq: [10, 10, 10, 10], pl: [40, 40, 40] },
+    "Июнь": { pu: [15, 15, 15, 15, 15], sq: [15, 15, 15, 15, 15], pl: [50, 50, 50] },
+    "Июль": { pu: [15, 15, 15, 15, 15, 15], sq: [20, 20, 20, 20, 20, 20], pl: [45, 45, 45, 45] },
+    "Август": { pu: [20, 20, 20, 20, 20], sq: [30, 30, 30, 30, 30], pl: [60, 60, 60] },
+    "Сентябрь": { pu: [25, 25, 25, 25], sq: [30, 30, 30, 30, 30, 30], pl: [60, 60, 60, 60] },
+    "Октябрь": { pu: [35, 35, 35], sq: [40, 40, 40, 40, 40], pl: [90, 90, 90] },
+    "Ноябрь": { pu: [50, 50], sq: [50, 50, 50, 50], pl: [100, 100, 100] },
+    "Декабрь": { pu: [100], sq: [50, 50, 50, 50], pl: [120, 120, 120] }
   }
 };
 
 const MONTH_NAMES = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-
-function getTechnicalVolume(volume) {
-  const techVol = {};
-  for (const key in volume) {
-    techVol[key] = volume[key].map(v => Math.ceil(v / 2));
-    if (techVol[key].length > 1) {
-       techVol[key] = techVol[key].slice(0, Math.ceil(techVol[key].length / 2));
-    }
-  }
-  return techVol;
-}
 
 let currentView = "today";
 let calendarDate = new Date();
@@ -35,7 +24,6 @@ if ('serviceWorker' in navigator) {
       const newSW = reg.installing;
       newSW.onstatechange = () => {
         if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          // New SW found, reload to apply
           window.location.reload();
         }
       };
@@ -62,47 +50,47 @@ function playTimerSound() {
 const EXERCISE_HELP = {
   "Круговые движения": {
     title: "Круговые движения",
-    body: "Общая разминка суставов. Делайте плавно, без резких движений."
+    body: "Общая разминка суставов. Делайте плавно, без резких движений. Шея, плечи, махи руками, махи от локтей, кисти рук, бёдра, ноги, ступни."
   },
   "«Кошка-корова»": {
     title: "Кошка-Корова",
-    body: "<ul><li><strong>ИП:</strong> На четвереньках, кисти под плечами, колени под бедрами.</li><li><strong>Выполнение:</strong> На выдохе плавно округляй спину вверх, подбородок к груди. На вдохе — мягко прогибайся вниз.</li><li><strong>Важно:</strong> Прогиб вниз делай МИНИМАЛЬНЫМ, чтобы не «закусывать» зону операции L5-S1. Основной акцент — на выгибание вверх.</li></ul>"
+    body: "<ul><li><strong>Выполнение:</strong> 12 раз. Акцент на выгибание вверх. Прогиб вниз минимальный (защита L5-S1).</li></ul>"
   },
   "«Птица-собака» (Bird-Dog)": {
     title: "Птица-Собака (Bird-Dog)",
-    body: "<ul><li><strong>ИП:</strong> На четвереньках.</li><li><strong>Выполнение:</strong> Одновременно вытяни правую руку вперед и левую ногу назад до параллели с полом. Замри на 2–3 сек.</li><li><strong>Важно:</strong> Представь, что на пояснице стоит стакан с водой — он не должен шелохнуться. Не задирай ногу слишком высоко.</li></ul>"
+    body: "<ul><li><strong>Выполнение:</strong> 2х10 раз. Стабилизация поясницы. Не задирать ногу выше параллели с полом.</li></ul>"
   },
-  "Медленные наклоны": {
-    title: "Нервное скольжение (для локтя)",
-    body: "<ul><li><strong>Выполнение:</strong> Вытяни руку в сторону, согни кисть на себя. Плавным движением подноси ладонь к уху, сгибая локоть, и отводи обратно.</li><li><strong>Важно:</strong> Чувствуй легкое натяжение, но НЕ БОЛЬ. Это «прочищает» путь для локтевого нерва.</li></ul>"
+  "Велосипед лежа на спине": {
+    title: "Велосипед лежа на спине",
+    body: "<strong>ВАЖНО:</strong> Поясница строго прижата к полу! Если поясница отрывается — уменьши амплитуду."
   },
   "Отжимания": {
     title: "Отжимания (Техника «Замок»)",
-    body: "<ul><li><strong>ИП:</strong> Упор лежа, тело — прямая линия.</li><li><strong>Выполнение:</strong> Локти направлены назад под углом 45° к телу.</li><li><strong>Для спины:</strong> Напрягай ягодицы и пресс, чтобы поясница не «провисала».</li><li><strong>Для локтя:</strong> Не разгибай локти до «щелчка» в верхней точке, оставляй их чуть согнутыми.</li></ul>"
+    body: "<ul><li>Локти под 45° к телу. Напрячь ягодицы и пресс (фиксация поясницы).</li><li><strong>ВАЖНО:</strong> Если локоть покалывает — не разгибай до щелчка.</li></ul>"
   },
   "Приседания": {
     title: "Приседания (Техника «Стул»)",
-    body: "<ul><li><strong>ИП:</strong> Ноги на ширине плеч, носки чуть в стороны.</li><li><strong>Выполнение:</strong> Начни с отведения таза назад, будто садишься на стул.</li><li><strong>Безопасность:</strong> Спина прямая. Если таз «подворачивается» — присел слишком глубоко. Твой предел — параллель бедер с полом.</li></ul>"
-  },
-  "Подтягивания": {
-    title: "Подтягивания (Нейтральный хват)",
-    body: "<ul><li><strong>Выполнение:</strong> Сначала потяни лопатки вниз, затем тяни себя грудью к перекладине.</li><li><strong>Важно:</strong> Никаких рывков! Спуск медленнее подъема.</li><li><strong>Главное:</strong> Сходить с турника только на подставку! Прыжки на пол запрещены навсегда (удар по L5-S1).</li></ul>"
+    body: "<ul><li>Вес на пятках. Глубина — до параллели бедер с полом.</li><li><strong>ВАЖНО:</strong> Чувствуешь округление поясницы — приседай выше.</li></ul>"
   },
   "Планка": {
     title: "Планка",
-    body: "<ul><li><strong>Выполнение:</strong> Держи тело ровно. Пресс максимально напряжен.</li><li><strong>Важно:</strong> Лучше делать на прямых руках, чтобы не давать давления на зону шва на локте.</li><li><strong>Спина:</strong> Если поясница начинает ныть — сразу прекращай.</li></ul>"
+    body: "Держи тело ровно. Пресс максимально напряжен. Поясница не должна провисать."
   },
-  "Пассивный вис": {
-    title: "Пассивный вис",
-    body: "Просто виси на турнике, расслабив всё тело ниже плеч. Чувствуй, как растягивается поясница. Время: 30–60 сек."
+  "Растяжка руки": {
+    title: "Растяжка руки",
+    body: "Декомпрессия локтевого нерва. Плавное натяжение без боли."
   },
-  "Поза ребенка": {
-    title: "Поза ребенка",
-    body: "Сядь на колени, опусти таз на пятки и потянись руками вперед. Максимальное расслабление мышц позвоночника."
+  "Растяжка ноги": {
+    title: "Растяжка ноги",
+    body: "Снятие напряжения с тазобедренного сустава (ТБС)."
   },
   "Растяжка грудных": {
     title: "Растяжка грудных мышц",
-    body: "Упрись предплечьями в косяки двери и плавно подайся корпусом вперед. Это освобождает плечевое сплетение и дает свободу локтевому нерву."
+    body: "В дверном проеме. Освобождение плечевого сплетения и декомпрессия нервов."
+  },
+  "Поза ребенка": {
+    title: "Поза ребенка (2 минуты)",
+    body: "Максимальное расслабление позвоночника. Опусти таз на пятки, руки вперед."
   }
 };
 
@@ -127,6 +115,7 @@ window.closeInfo = () => {
   const modal = document.querySelector('.modal-overlay');
   if (modal) modal.remove();
 };
+
 function getDateKey(date) {
   const y = date.getFullYear();
   const m = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -148,26 +137,39 @@ function getFirstLogDate() {
   return earliest;
 }
 
+
 function getCurrentState(dateOverride) {
   const now = dateOverride || new Date();
   const day = now.getDay();
   const monthName = MONTH_NAMES[now.getMonth()];
-  let type = "Отдых";
-  if ([1, 3, 5].includes(day)) type = "Объем";
+  
+  let type = "Выходной"; 
+  if ([1, 3, 5].includes(day)) type = "Объемная";
   else if ([2, 4].includes(day)) type = "Восстановление";
-  else if (day === 6) type = "Техника";
+  else if (day === 0) type = "Технический";
+  else if (day === 6) type = "Выходной";
 
   const data = PROGRAM.months[monthName] || PROGRAM.months["Апрель"];
-  let currentVolume = data.volume;
-  if (type === "Техника") currentVolume = getTechnicalVolume(data.volume);
-  else if (type === "Восстановление") currentVolume = { pl: data.volume.pl };
-  else if (type === "Отдых") currentVolume = null;
+  let currentVolume = { ...data };
+
+  if (type === "Технический") {
+    currentVolume = {
+      pu: data.pu.map(v => Math.ceil(v * 0.5)),
+      sq: data.sq.map(v => Math.ceil(v * 0.5)),
+      pl: data.pl
+    };
+  } else if (type === "Восстановление") {
+    currentVolume = { pl: data.pl };
+  } else if (type === "Выходной") {
+    currentVolume = null;
+  }
 
   const dateKey = getDateKey(now);
   const savedData = JSON.parse(localStorage.getItem(dateKey) || "{}");
 
   return { date: now, dateKey, type, monthName, goal: data, volume: currentVolume, saved: savedData };
 }
+
 
 function formatSeconds(totalSeconds) {
   const h = Math.floor(totalSeconds / 3600);
@@ -187,7 +189,7 @@ function getMonthlyStats(monthOffset = 0) {
   
   const firstLogDate = getFirstLogDate();
 
-  let pushups = 0, squats = 0, pullups = 0, plankSeconds = 0;
+  let pushups = 0, squats = 0, plankSeconds = 0;
   let completedCount = 0, missedCount = 0, restCount = 0;
   const notes = [];
 
@@ -199,34 +201,26 @@ function getMonthlyStats(monthOffset = 0) {
     
     // Stats for volume
     if (saved.main) {
-      const monthGoal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]).volume;
-      if (saved.main.pushups) {
-        saved.main.pushups.forEach((done, i) => { if (done) pushups += monthGoal.pu[i] || 0; });
+      if (saved.main.pu) {
+        saved.main.pu.forEach(val => { if (val) pushups += parseInt(val) || 0; });
       }
-      if (saved.main.squats) {
-        saved.main.squats.forEach((done, i) => { if (done) squats += monthGoal.sq[i] || 0; });
+      if (saved.main.sq) {
+        saved.main.sq.forEach(val => { if (val) squats += parseInt(val) || 0; });
       }
-      if (saved.main.pullups) {
-        saved.main.pullups.forEach((done, i) => { if (done) pullups += monthGoal.plups[i] || 0; });
-      }
-      if (saved.main.plank) {
-        saved.main.plank.forEach((done, i) => { if (done) plankSeconds += monthGoal.pl[i] || 0; });
-      }
+    }
+    if (saved.core && saved.core[0]) {
+      const monthGoal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]);
+      plankSeconds += monthGoal.pl[0] || 0;
     }
 
     // Advanced Stats
-    if (type === "Отдых") {
+    if (type === "Выходной") {
       restCount++;
     } else {
       if (saved.done) {
         completedCount++;
       } else if (curDate < today && curDate >= firstLogDate) {
-        // If it was a workout day in the past (after first join) and not finished, count as missed
-        const workDone = saved.warmup?.some(v => v) || 
-                         saved.main?.pushups?.some(v => v) || 
-                         saved.main?.squats?.some(v => v) ||
-                         saved.main?.pullups?.some(v => v);
-        if (!workDone) missedCount++;
+        missedCount++;
       }
     }
 
@@ -234,12 +228,12 @@ function getMonthlyStats(monthOffset = 0) {
       notes.push({ date: curDate.toLocaleDateString("ru-RU"), text: saved.note });
     }
   }
-  return { pushups, squats, pullups, plankSeconds, completedCount, missedCount, restCount, notes };
+  return { pushups, squats, plankSeconds, completedCount, missedCount, restCount, notes };
 }
 
 function getGrowthData() {
   const labels = [];
-  const data = { pu: [], sq: [], plups: [] };
+  const data = { pu: [], sq: [], pl: [] };
   for (let i = 2; i >= 0; i--) {
     const date = new Date();
     date.setMonth(date.getMonth() - i);
@@ -247,14 +241,26 @@ function getGrowthData() {
     const stats = getMonthlyStats(i);
     data.pu.push(stats.pushups);
     data.sq.push(stats.squats);
-    data.plups.push(stats.pullups);
+    data.pl.push(stats.plankSeconds);
   }
   return { labels, data };
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function getDayType(date) {
+  const day = date.getDay();
+  if ([1, 3, 5].includes(day)) return "Объемная";
+  if ([2, 4].includes(day)) return "Восстановление";
+  if (day === 0) return "Технический";
+  return "Выходной";
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   setupMainTabs();
   renderView();
+  
+  const state = getCurrentState();
+  await requestNotificationPermission();
+  checkAndSendReminder(state);
 });
 
 function setupMainTabs() {
@@ -288,6 +294,21 @@ function renderView() {
 }
 
 function renderToday(state, container) {
+  // Global Emergency Button (always visible if not done)
+  if (!state.saved.done && state.type !== "Выходной") {
+    if (!document.getElementById("emergency-btn")) {
+       const btn = document.createElement("button");
+       btn.id = "emergency-btn";
+       btn.className = "emergency-btn fade-in";
+       btn.innerHTML = "<span>STOP / БОЛЬ</span>";
+       btn.onclick = handleEmergency;
+       document.body.appendChild(btn);
+    }
+  } else {
+    const btn = document.getElementById("emergency-btn");
+    if (btn) btn.remove();
+  }
+
   if (state.saved.done) {
     container.innerHTML = `
       <div class="glass-card success-view">
@@ -300,39 +321,75 @@ function renderToday(state, container) {
     return;
   }
 
+  if (state.type === "Выходной") {
+    container.innerHTML = `
+      <div class="glass-card off-screen fade-in">
+        <h2>Суббота — Выходной 🛋️</h2>
+        <p>Время восстановления и роста.</p>
+        <div class="quote-box">
+          «Дисциплина — это умение делать то, что не хочется, чтобы достичь того, что очень хочется».
+        </div>
+        <div class="safety-rules">
+          <h3>Правила безопасности Михаила:</h3>
+          <ul>
+            <li>Появилось онемение — СТОП.</li>
+            <li>Прострел в пояснице — СТОП.</li>
+            <li>Прыжки на пол — ЗАПРЕЩЕНО.</li>
+          </ul>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Active workout layout
   let html = `
     <header class="glass-card">
       <h1>${state.monthName} 2026</h1>
       <p class="subtitle">Сегодня: ${state.date.toLocaleDateString("ru-RU")} — <strong>${state.type}</strong></p>
     </header>
+    
+    <div class="session-progress-container">
+      <div class="session-progress-track">
+        <div class="session-progress-fill" id="session-progress-fill"></div>
+      </div>
+      <div class="session-progress-text" id="session-progress-text">Прогресс: 0%</div>
+    </div>
+    
+    <section class="workout-navigator">
+      <button class="nav-btn active" data-step="warmup">Разминка</button>
   `;
 
-  if (state.type === "Отдых") {
-    html += `<section class="glass-card center"><h2>Время заслуженного отдыха! 🛋️</h2><p>Расслабьтесь и восстановитесь.</p></section>`;
-  } else {
-    html += `
-      <div class="session-progress-container">
-        <div class="session-progress-track">
-          <div class="session-progress-fill" id="session-progress-fill"></div>
-        </div>
-        <div class="session-progress-text" id="session-progress-text">Прогресс: 0%</div>
-      </div>
-      <section class="workout-navigator">
-        <button class="nav-btn active" data-step="warmup">Разминка</button>
-        <button class="nav-btn" data-step="main">Основной блок</button>
-        <button class="nav-btn" data-step="cooldown">Заминка</button>
-      </section>
-      <div id="workout-content">${renderWarmup(state)}</div>
-    `;
+  if (state.type === "Объемная" || state.type === "Технический") {
+    html += `<button class="nav-btn" data-step="main">Сила</button>`;
   }
+  
+  html += `<button class="nav-btn" data-step="core">Core</button>`;
+  html += `<button class="nav-btn" data-step="cooldown">Заминка</button>`;
+  
+  html += `</section><div id="workout-content"></div>`;
+  
   container.innerHTML = html;
   setupNav();
+  goToStep('warmup');
   updateSessionProgress();
 }
 
+function handleEmergency() {
+  if (confirm("ПРЕРВАТЬ ТРЕНИРОВКУ?\n\nПри неврологической боли (прострел, онемение) — немедленный отдых. Запиши, на каком движении это случилось.")) {
+    const state = getCurrentState();
+    state.saved.done = true;
+    state.saved.interrupted = true;
+    state.saved.note = (state.saved.note || "") + "\n[ТРЕНИРОВКА ПРЕРВАНА ИЗ-ЗА БОЛИ]";
+    localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+    location.reload();
+  }
+}
+
+
 function updateSessionProgress() {
   const state = getCurrentState();
-  if (!state.volume || state.type === "Отдых") return;
+  if (!state.volume || state.type === "Выходной") return;
 
   let total = 0;
   let completed = 0;
@@ -343,34 +400,28 @@ function updateSessionProgress() {
     state.saved.warmup.forEach(v => { if (v) completed++; });
   }
 
-  // Main
+  // Main (Sets for pu and sq)
   if (state.volume.pu) {
     total += state.volume.pu.length;
-    if (state.saved.main && state.saved.main.pushups) {
-      state.saved.main.pushups.forEach(v => { if (v) completed++; });
+    if (state.saved.main && state.saved.main.pu) {
+      state.saved.main.pu.forEach(v => { if (v) completed++; });
     }
   }
   if (state.volume.sq) {
     total += state.volume.sq.length;
-    if (state.saved.main && state.saved.main.squats) {
-      state.saved.main.squats.forEach(v => { if (v) completed++; });
-    }
-  }
-  if (state.volume.plups) {
-    total += state.volume.plups.length;
-    if (state.saved.main && state.saved.main.pullups) {
-      state.saved.main.pullups.forEach(v => { if (v) completed++; });
-    }
-  }
-  if (state.volume.pl) {
-    total += state.volume.pl.length;
-    if (state.saved.main && state.saved.main.plank) {
-      state.saved.main.plank.forEach(v => { if (v) completed++; });
+    if (state.saved.main && state.saved.main.sq) {
+      state.saved.main.sq.forEach(v => { if (v) completed++; });
     }
   }
 
-  // Cooldown (3 items)
-  total += 3;
+  // Core (Plank)
+  if (state.volume.pl) {
+    total += 1;
+    if (state.saved.core && state.saved.core[0]) completed++;
+  }
+
+  // Cooldown (4 items)
+  total += 4;
   if (state.saved.cooldown) {
     state.saved.cooldown.forEach(v => { if (v) completed++; });
   }
@@ -426,8 +477,7 @@ function renderHistoryView(container) {
       <h2 class="section-title">📊 Месячный объем (накопительно)</h2>
       ${renderProgressBar("Отжимания", stats.pushups, 1000)}
       ${renderProgressBar("Приседания", stats.squats, 2000)}
-      ${renderProgressBar("Подтягивания", stats.pullups, 1000)}
-      <p class="tip" style="text-align:center; margin-top:10px">Цели: 1000 / 2000 / 1000 (накопленный объем)</p>
+      <p class="tip" style="text-align:center; margin-top:10px">Цели: 1000 / 2000 (накопленный объем)</p>
     </section>
 
     <section class="glass-card fade-in">
@@ -481,16 +531,16 @@ function renderProgressBar(label, current, goal) {
   `;
 }
 
-function renderSVGChart(pu, sq, plups) {
-  const max = Math.max(...pu, ...sq, ...plups, 100) * 1.2;
-  const points = (arr) => arr.map((v, i) => `${(i / (arr.length - 1)) * 100},${100 - (v / max) * 100}`).join(' ');
+function renderSVGChart(pu, sq, pl) {
+  const max = Math.max(...pu, ...sq, ...pl, 100) * 1.2;
+  const points = (arr) => arr.length > 1 ? arr.map((v, i) => `${(i / (arr.length - 1)) * 100},${100 - (v / max) * 100}`).join(' ') : `0,${100 - (arr[0] / max) * 100} 100,${100 - (arr[0] / max) * 100}`;
   
   return `
     <svg viewBox="0 0 100 100" class="chart-svg" preserveAspectRatio="none">
       <polyline points="${points(pu)}" class="chart-line" />
       <polyline points="${points(sq)}" class="chart-line" style="stroke: var(--accent-success)" />
-      <polyline points="${points(plups)}" class="chart-line" style="stroke: var(--accent-secondary)" />
-      ${pu.map((v, i) => `<circle cx="${(i / (pu.length - 1)) * 100}" cy="${100 - (v / max) * 100}" r="2" class="chart-point" />`).join('')}
+      <polyline points="${points(pl)}" class="chart-line" style="stroke: var(--accent-secondary)" />
+      ${pu.map((v, i) => `<circle cx="${(i / (Math.max(pu.length - 1, 1))) * 100}" cy="${100 - (v / max) * 100}" r="2" class="chart-point" />`).join('')}
     </svg>
   `;
 }
@@ -534,13 +584,13 @@ function renderCalendarGrid() {
     let extraClass = '';
     
     if (!isOtherMonth) {
-      if (type === "Объем") dots.push("dot-volume");
-      else if (type === "Техника") dots.push("dot-tech");
+      if (type === "Объемная") dots.push("dot-volume");
+      else if (type === "Технический") dots.push("dot-tech");
       
-      const isCompleted = saved.main && Object.values(saved.main).some(arr => arr.includes(true));
+      const isCompleted = saved.done;
       if (isCompleted) {
         dots.push("dot-completed");
-      } else if (isPast && type !== "Отдых") {
+      } else if (isPast && type !== "Выходной") {
         extraClass = 'missed';
       }
       
@@ -572,42 +622,19 @@ window.changeCalMonth = (dir) => {
 };
 
 function renderWarmup(state) {
-  const s = state.saved.warmup || [];
+  const s = state.saved.warmup || [false, false, false, false];
+  const allChecked = s.filter(v => v).length === 4;
+  
   return `
     <div class="glass-card fade-in">
       <h2>1. Разминка</h2>
-      <ul class="exercise-list">
-        <li>
-          <label class="exercise-row">
-            <input type="checkbox" onchange="saveCheck('warmup', 0, this)" ${s[0]?'checked':''}>
-            <span>Круговые движения</span>
-            <button class="info-btn" onclick="showInfo('Круговые движения')">i</button>
-          </label>
-        </li>
-        <li>
-          <label class="exercise-row">
-            <input type="checkbox" onchange="saveCheck('warmup', 1, this)" ${s[1]?'checked':''}>
-            <span>«Кошка-корова»</span>
-            <button class="info-btn" onclick="showInfo('«Кошка-корова»')">i</button>
-          </label>
-        </li>
-        <li class="tip-box">
-          <label class="exercise-row">
-            <input type="checkbox" onchange="saveCheck('warmup', 2, this)" ${s[2]?'checked':''}>
-            <strong>«Птица-собака» (Bird-Dog)</strong>
-            <button class="info-btn" onclick="showInfo('«Птица-собака» (Bird-Dog)')">i</button>
-          </label>
-          <p class="tip">Стабилизация L5-S1. Спина ровная!</p>
-        </li>
-        <li>
-          <label class="exercise-row">
-            <input type="checkbox" onchange="saveCheck('warmup', 3, this)" ${s[3]?'checked':''}>
-            <span>Медленные наклоны</span>
-            <button class="info-btn" onclick="showInfo('Медленные наклоны')">i</button>
-          </label>
-        </li>
-      </ul>
-      <button class="primary-btn" onclick="goToStep('main')">Перейти к основе</button>
+      <div class="checklist-container">
+        ${renderChecklistItem('warmup', 0, 'Суставная разминка', s[0], 'Круговые движения')}
+        ${renderChecklistItem('warmup', 1, '«Кошка-корова» (12 раз)', s[1], '«Кошка-корова»')}
+        ${renderChecklistItem('warmup', 2, '«Птица-собака» (2х10)', s[2], '«Птица-собака» (Bird-Dog)')}
+        ${renderChecklistItem('warmup', 3, 'Велосипед лежа на спине', s[3], 'Велосипед лежа на спине')}
+      </div>
+      <button class="primary-btn ${allChecked ? '' : 'locked'}" onclick="goToNextStep('warmup')">Далее</button>
     </div>
   `;
 }
@@ -615,65 +642,155 @@ function renderWarmup(state) {
 function renderMain(state) {
   const vol = state.volume;
   const s = state.saved.main || {};
-  let html = `<div class="glass-card fade-in"><h2>2. Основной блок</h2><p class="warning-banner">⚠️ <strong>Михаил, внимание!</strong> Онемение мизинца = СТОП.</p>`;
-  if (vol.pu) html += renderExercise("pushups", "Отжимания", vol.pu, s.pushups || []);
-  if (vol.sq) html += renderExercise("squats", "Приседания", vol.sq, s.squats || []);
-  if (vol.plups) html += renderExercise("pullups", "Подтягивания", vol.plups, s.pullups || []);
-  if (vol.pl) html += renderExercise("plank", "Планка", vol.pl, s.plank || []);
-  html += `<button class="primary-btn" onclick="goToStep('cooldown')">К заминке</button></div>`;
-  return html;
+  
+  return `
+    <div class="glass-card fade-in">
+      <h2>2. Сила</h2>
+      <p class="warning-banner">⚠️ <strong>Техника превыше всего!</strong> Если локоть покалывает — не разгибай до щелчка.</p>
+      
+      <div class="exercise-block">
+        <div class="exercise-header-row">
+          <h3>Отжимания («Замок»)</h3>
+          <button class="info-btn" onclick="showInfo('Отжимания')">i</button>
+        </div>
+        <div class="strength-inputs">
+          ${vol.pu.map((target, i) => `
+            <div class="set-row">
+              <span class="set-label">Сет ${i+1} (Цель: ${target})</span>
+              <input type="number" class="set-input" value="${s.pu && s.pu[i] ? s.pu[i] : target}" 
+                     onchange="saveStrength('pu', ${i}, this.value)">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="exercise-block" style="margin-top:30px">
+        <div class="exercise-header-row">
+          <h3>Приседания («Стул»)</h3>
+          <button class="info-btn" onclick="showInfo('Приседания')">i</button>
+        </div>
+        <div class="strength-inputs">
+          ${vol.sq.map((target, i) => `
+            <div class="set-row">
+              <span class="set-label">Сет ${i+1} (Цель: ${target})</span>
+              <input type="number" class="set-input" value="${s.sq && s.sq[i] ? s.sq[i] : target}" 
+                     onchange="saveStrength('sq', ${i}, this.value)">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <button class="primary-btn" onclick="goToNextStep('main')">К блоку Core</button>
+    </div>
+  `;
 }
 
-function renderExercise(id, name, sets, saved) {
+function renderCore(state) {
+  const target = state.volume.pl[0]; // Plank target
+  const isDone = state.saved.core && state.saved.core[0];
+
   return `
-    <div class="exercise-block">
-      <div class="exercise-header-row">
-        <h3>${name}</h3>
-        <button class="info-btn" onclick="showInfo('${name}')">i</button>
+    <div class="glass-card core-timer-view fade-in">
+      <h2>3. Core</h2>
+      <div class="timer-circle ${isDone ? 'active' : ''}" id="plank-timer-circle">
+        <span class="timer-value" id="plank-timer-value">${target}</span>
+        <span class="timer-label">секунд</span>
       </div>
-      <div class="sets-grid">
-        ${sets.map((reps, i) => `<div class="set-item ${saved[i]?'completed':''}" onclick="toggleSet('${id}', ${i}, this, ${reps})">${reps}</div>`).join('')}
-      </div>
+      ${isDone ? '<p class="success-msg">✅ Выполнено!</p>' : `<button class="primary-btn" id="plank-start-btn" onclick="startPlankTimer(${target})">СТАРТ</button>`}
+      <button class="primary-btn" style="margin-top:20px" onclick="goToNextStep('core')">К заминке</button>
     </div>
   `;
 }
 
 function renderCooldown(state) {
-  const s = state.saved.cooldown || [];
+  const s = state.saved.cooldown || [false, false, false, false];
+  
   return `
     <div class="glass-card fade-in">
-      <h2>3. Заминка</h2>
-      <ul class="exercise-list">
-        <li>
-          <label class="exercise-row">
-            <input type="checkbox" onchange="saveCheck('cooldown', 0, this)" ${s[0]?'checked':''}>
-            <span>Пассивный вис</span>
-            <button class="info-btn" onclick="showInfo('Пассивный вис')">i</button>
-          </label>
-        </li>
-        <li>
-          <label class="exercise-row">
-            <input type="checkbox" onchange="saveCheck('cooldown', 1, this)" ${s[1]?'checked':''}>
-            <span>Поза ребенка</span>
-            <button class="info-btn" onclick="showInfo('Поза ребенка')">i</button>
-          </label>
-        </li>
-        <li>
-          <label class="exercise-row">
-            <input type="checkbox" onchange="saveCheck('cooldown', 2, this)" ${s[2]?'checked':''}>
-            <span>Растяжка грудных</span>
-            <button class="info-btn" onclick="showInfo('Растяжка грудных')">i</button>
-          </label>
-        </li>
-      </ul>
+      <h2>4. Заминка</h2>
+      <div class="checklist-container">
+        ${renderChecklistItem('cooldown', 0, 'Растяжка руки', s[0], 'Растяжка руки')}
+        ${renderChecklistItem('cooldown', 1, 'Растяжка ноги', s[1], 'Растяжка ноги')}
+        ${renderChecklistItem('cooldown', 2, 'Растяжка груди', s[2], 'Растяжка грудных')}
+        ${renderChecklistItem('cooldown', 3, 'Поза ребенка (2 мин)', s[3], 'Поза ребенка')}
+      </div>
+      
       <section class="wellness-note-box">
         <h3>Заметки о самочувствии</h3>
-        <textarea class="wellness-textarea" id="wellness-note" placeholder="Была ли боль? Дискомфорт? Напишите здесь..." oninput="saveNote(this.value)">${state.saved.note || ''}</textarea>
+        <textarea class="wellness-textarea" id="wellness-note" placeholder="Была ли боль? Дискомфорт?" 
+                  oninput="saveNote(this.value)">${state.saved.note || ''}</textarea>
       </section>
+
       <button class="primary-btn success" onclick="finishWorkout()">Завершить тренировку</button>
     </div>
   `;
 }
+
+function renderChecklistItem(sec, idx, label, checked, infoKey) {
+  return `
+    <label class="checklist-item">
+      <input type="checkbox" onchange="saveCheck('${sec}', ${idx}, this)" ${checked ? 'checked' : ''}>
+      <span>${label}</span>
+      <button class="info-btn" onclick="showInfo('${infoKey}')">i</button>
+    </label>
+  `;
+}
+
+window.saveStrength = (ex, idx, val) => {
+  const state = getCurrentState();
+  if (!state.saved.main) state.saved.main = {};
+  if (!state.saved.main[ex]) state.saved.main[ex] = [];
+  const numVal = parseInt(val);
+  state.saved.main[ex][idx] = numVal;
+  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+  updateGlobalMax(ex, numVal);
+  updateSessionProgress();
+};
+
+window.startPlankTimer = (seconds) => {
+  const btn = document.getElementById("plank-start-btn");
+  const circle = document.getElementById("plank-timer-circle");
+  const display = document.getElementById("plank-timer-value");
+  
+  btn.style.display = "none";
+  circle.classList.add("active");
+  
+  let timeLeft = seconds;
+  const timer = setInterval(() => {
+    timeLeft--;
+    display.innerText = timeLeft;
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      playTimerSound();
+      saveCheck('core', 0, { checked: true });
+      goToStep('core'); // Re-render to show success
+    }
+  }, 1000);
+};
+
+function updateGlobalMax(exercise, reps) {
+  const key = `sage_max_${exercise}`;
+  const currentMax = parseInt(localStorage.getItem(key) || 0);
+  if (reps > currentMax) {
+    localStorage.setItem(key, reps);
+  }
+}
+
+window.goToNextStep = (current) => {
+  const steps = {
+    'warmup': 'main',
+    'main': 'core',
+    'core': 'cooldown'
+  };
+  
+  // Skip Strength (main) if not volume/technical
+  const state = getCurrentState();
+  let next = steps[current];
+  if (next === 'main' && state.type === 'Восстановление') next = 'core';
+  
+  goToStep(next);
+};
+
 
 window.saveNote = (text) => {
   const state = getCurrentState();
@@ -787,6 +904,32 @@ function setupNav() {
   document.querySelectorAll(".nav-btn").forEach(btn => btn.onclick = () => goToStep(btn.dataset.step));
 }
 
+// Notifications Logic
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+}
+
+function checkAndSendReminder(state) {
+  if (state.type === "Выходной" || state.saved.done) return;
+  
+  const now = new Date();
+  if (now.getHours() >= 8) {
+    const lastNotified = localStorage.getItem("sage_last_notified");
+    const todayStr = now.toISOString().split('T')[0];
+    
+    if (lastNotified !== todayStr && Notification.permission === "granted") {
+      new Notification("SAGEWorkOut", {
+        body: `Михаил, пора двигаться к сотне. Сегодня: ${state.type}`,
+        icon: "./assets/icon-192.png"
+      });
+      localStorage.setItem("sage_last_notified", todayStr);
+    }
+  }
+}
+
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -795,3 +938,4 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('SW Error', err));
   });
 }
+
