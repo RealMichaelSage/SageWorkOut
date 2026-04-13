@@ -17,36 +17,6 @@ const MONTH_NAMES = ["Январь", "Февраль", "Март", "Апрель
 let currentView = "today";
 let calendarDate = new Date();
 
-// PWA & Effects Setup
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    reg.onupdatefound = () => {
-      const newSW = reg.installing;
-      newSW.onstatechange = () => {
-        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          window.location.reload();
-        }
-      };
-    };
-  });
-}
-
-function playTimerSound() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(880, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
-  gain.gain.setValueAtTime(0.1, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime + 0.5);
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-}
-
 const EXERCISE_HELP = {
   "Круговые движения": {
     title: "Круговые движения",
@@ -116,6 +86,22 @@ window.closeInfo = () => {
   if (modal) modal.remove();
 };
 
+function playTimerSound() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
+  gain.gain.setValueAtTime(0.1, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.5);
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+}
+
 function getDateKey(date) {
   const y = date.getFullYear();
   const m = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -136,7 +122,6 @@ function getFirstLogDate() {
   }
   return earliest;
 }
-
 
 function getCurrentState(dateOverride) {
   const now = dateOverride || new Date();
@@ -170,7 +155,6 @@ function getCurrentState(dateOverride) {
   return { date: now, dateKey, type, monthName, goal: data, volume: currentVolume, saved: savedData };
 }
 
-
 function formatSeconds(totalSeconds) {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
@@ -199,13 +183,19 @@ function getMonthlyStats(monthOffset = 0) {
     const dateKey = getDateKey(curDate);
     const saved = JSON.parse(localStorage.getItem(dateKey) || "{}");
     
-    // Stats for volume
     if (saved.main) {
+      const monthGoal = (PROGRAM.months[MONTH_NAMES[month]] || PROGRAM.months["Апрель"]);
       if (saved.main.pu) {
-        saved.main.pu.forEach(val => { if (val) pushups += parseInt(val) || 0; });
+        saved.main.pu.forEach((val, i) => { 
+          if (val === true) pushups += monthGoal.pu[i] || 0;
+          else if (val) pushups += parseInt(val) || 0; 
+        });
       }
       if (saved.main.sq) {
-        saved.main.sq.forEach(val => { if (val) squats += parseInt(val) || 0; });
+        saved.main.sq.forEach((val, i) => { 
+          if (val === true) squats += monthGoal.sq[i] || 0;
+          else if (val) squats += parseInt(val) || 0; 
+        });
       }
     }
     if (saved.core && saved.core[0]) {
@@ -213,7 +203,6 @@ function getMonthlyStats(monthOffset = 0) {
       plankSeconds += monthGoal.pl[0] || 0;
     }
 
-    // Advanced Stats
     if (type === "Выходной") {
       restCount++;
     } else {
@@ -231,6 +220,14 @@ function getMonthlyStats(monthOffset = 0) {
   return { pushups, squats, plankSeconds, completedCount, missedCount, restCount, notes };
 }
 
+function getDayType(date) {
+  const day = date.getDay();
+  if ([1, 3, 5].includes(day)) return "Объемная";
+  if ([2, 4].includes(day)) return "Восстановление";
+  if (day === 0) return "Технический";
+  return "Выходной";
+}
+
 function getGrowthData() {
   const labels = [];
   const data = { pu: [], sq: [], pl: [] };
@@ -244,14 +241,6 @@ function getGrowthData() {
     data.pl.push(stats.plankSeconds);
   }
   return { labels, data };
-}
-
-function getDayType(date) {
-  const day = date.getDay();
-  if ([1, 3, 5].includes(day)) return "Объемная";
-  if ([2, 4].includes(day)) return "Восстановление";
-  if (day === 0) return "Технический";
-  return "Выходной";
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -294,7 +283,6 @@ function renderView() {
 }
 
 function renderToday(state, container) {
-  // Global Emergency Button (always visible if not done)
   if (!state.saved.done && state.type !== "Выходной") {
     if (!document.getElementById("emergency-btn")) {
        const btn = document.createElement("button");
@@ -342,7 +330,6 @@ function renderToday(state, container) {
     return;
   }
 
-  // Active workout layout
   let html = `
     <header class="glass-card">
       <h1>${state.monthName} 2026</h1>
@@ -386,50 +373,30 @@ function handleEmergency() {
   }
 }
 
-
 function updateSessionProgress() {
   const state = getCurrentState();
   if (!state.volume || state.type === "Выходной") return;
-
-  let total = 0;
-  let completed = 0;
-
-  // Warmup (4 items)
+  let total = 0, completed = 0;
   total += 4;
-  if (state.saved.warmup) {
-    state.saved.warmup.forEach(v => { if (v) completed++; });
-  }
-
-  // Main (Sets for pu and sq)
+  if (state.saved.warmup) state.saved.warmup.forEach(v => { if (v) completed++; });
   if (state.volume.pu) {
     total += state.volume.pu.length;
-    if (state.saved.main && state.saved.main.pu) {
-      state.saved.main.pu.forEach(v => { if (v) completed++; });
-    }
+    if (state.saved.main && state.saved.main.pu) state.saved.main.pu.forEach(v => { if (v) completed++; });
   }
   if (state.volume.sq) {
     total += state.volume.sq.length;
-    if (state.saved.main && state.saved.main.sq) {
-      state.saved.main.sq.forEach(v => { if (v) completed++; });
-    }
+    if (state.saved.main && state.saved.main.sq) state.saved.main.sq.forEach(v => { if (v) completed++; });
   }
-
-  // Core (Plank)
   if (state.volume.pl) {
     total += 1;
     if (state.saved.core && state.saved.core[0]) completed++;
   }
-
-  // Cooldown (4 items)
   total += 4;
-  if (state.saved.cooldown) {
-    state.saved.cooldown.forEach(v => { if (v) completed++; });
-  }
+  if (state.saved.cooldown) state.saved.cooldown.forEach(v => { if (v) completed++; });
 
   const percent = Math.min(Math.round((completed / total) * 100), 100);
   const fill = document.getElementById("session-progress-fill");
   const text = document.getElementById("session-progress-text");
-  
   if (fill) fill.style.width = `${percent}%`;
   if (text) text.innerText = `Прогресс: ${percent}%`;
 }
@@ -444,52 +411,23 @@ function renderHistoryView(container) {
       <h3>Статус на сегодня</h3>
       <div class="status-text">${state.date.toLocaleDateString("ru-RU", {weekday:'short'})}: ${state.type}</div>
     </div>
-
     <div class="stats-grid fade-in">
-      <div class="stat-card">
-        <div class="stat-icon">✅</div>
-        <div class="stat-value">${stats.completedCount}</div>
-        <div class="stat-label">Сделано</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">❌</div>
-        <div class="stat-value">${stats.missedCount}</div>
-        <div class="stat-label">Пропущено</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🛋️</div>
-        <div class="stat-value">${stats.restCount}</div>
-        <div class="stat-label">Отдых</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">⏱️</div>
-        <div class="stat-value">${stats.completedCount + stats.missedCount}</div>
-        <div class="stat-label">Всего</div>
-      </div>
-      <div class="stat-card wide">
-        <div class="stat-icon">🧘 Планка (всего за месяц)</div>
-        <div class="stat-value stat-value-large">${formatSeconds(stats.plankSeconds)}</div>
-        <div class="stat-label">Общее время выносливости</div>
-      </div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">${stats.completedCount}</div><div class="stat-label">Сделано</div></div>
+      <div class="stat-card"><div class="stat-icon">❌</div><div class="stat-value">${stats.missedCount}</div><div class="stat-label">Пропущено</div></div>
+      <div class="stat-card"><div class="stat-icon">🛋️</div><div class="stat-value">${stats.restCount}</div><div class="stat-label">Отдых</div></div>
+      <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value">${stats.completedCount + stats.missedCount}</div><div class="stat-label">Всего</div></div>
+      <div class="stat-card wide"><div class="stat-icon">🧘 Планка (всего за месяц)</div><div class="stat-value stat-value-large">${formatSeconds(stats.plankSeconds)}</div><div class="stat-label">Общее время</div></div>
     </div>
-
     <section class="glass-card fade-in">
-      <h2 class="section-title">📊 Месячный объем (накопительно)</h2>
+      <h2 class="section-title">📊 Месячный объем</h2>
       ${renderProgressBar("Отжимания", stats.pushups, 1000)}
       ${renderProgressBar("Приседания", stats.squats, 2000)}
-      <p class="tip" style="text-align:center; margin-top:10px">Цели: 1000 / 2000 (накопленный объем)</p>
     </section>
-
     <section class="glass-card fade-in">
       <h2 class="section-title">📈 Рост повторений</h2>
-      <div class="chart-container">
-        ${renderSVGChart(growth.data.pu, growth.data.sq, growth.data.plups)}
-      </div>
-      <div class="chart-labels">
-        ${growth.labels.map(l => `<span>${l}</span>`).join('')}
-      </div>
+      <div class="chart-container">${renderSVGChart(growth.data.pu, growth.data.sq, growth.data.pl)}</div>
+      <div class="chart-labels">${growth.labels.map(l => `<span>${l}</span>`).join('')}</div>
     </section>
-
     <div class="glass-card fade-in">
       <div class="calendar-header">
         <button class="cal-nav-btn" onclick="changeCalMonth(-1)">←</button>
@@ -497,152 +435,78 @@ function renderHistoryView(container) {
         <button class="cal-nav-btn" onclick="changeCalMonth(1)">→</button>
       </div>
       <div class="calendar-grid">
-        <div class="weekday">ПН</div><div class="weekday">ВТ</div><div class="weekday">СР</div>
-        <div class="weekday">ЧТ</div><div class="weekday">ПТ</div><div class="weekday">СБ</div><div class="weekday">ВС</div>
+        <div class="weekday">ПН</div><div class="weekday">ВТ</div><div class="weekday">СР</div><div class="weekday">ЧТ</div><div class="weekday">ПТ</div><div class="weekday">СБ</div><div class="weekday">ВС</div>
+        ${renderCalendarGrid()}
+      </div>
+    </div>
   `;
-
-  html += renderCalendarGrid();
-  html += `</div></div>`;
-
   if (stats.notes.length > 0) {
-    html += `
-      <section class="glass-card fade-in">
-        <h2 class="section-title">📝 Архив заметок</h2>
-        <div class="notes-archive-list">
-          ${stats.notes.map(n => `<div class="note-card"><div class="note-date">${n.date}</div><div class="note-text">${n.text}</div></div>`).join('')}
-        </div>
-      </section>
-    `;
+    html += `<section class="glass-card fade-in"><h2 class="section-title">📝 Архив заметок</h2><div class="notes-archive-list">${stats.notes.map(n => `<div class="note-card"><div class="note-date">${n.date}</div><div class="note-text">${n.text}</div></div>`).join('')}</div></section>`;
   }
-
   container.innerHTML = html;
 }
 
 function renderProgressBar(label, current, goal) {
   const percent = Math.min(Math.round((current / goal) * 100), 100);
-  return `
-    <div class="progress-goal-item">
-      <div class="goal-info">
-        <span>${label}</span>
-        <span><strong>${current}</strong> / ${goal}</span>
-      </div>
-      <div class="progress-track"><div class="progress-fill" style="width: ${percent}%"></div></div>
-    </div>
-  `;
+  return `<div class="progress-goal-item"><div class="goal-info"><span>${label}</span><span><strong>${current}</strong> / ${goal}</span></div><div class="progress-track"><div class="progress-fill" style="width: ${percent}%"></div></div></div>`;
 }
 
 function renderSVGChart(pu, sq, pl) {
   const max = Math.max(...pu, ...sq, ...pl, 100) * 1.2;
   const points = (arr) => arr.length > 1 ? arr.map((v, i) => `${(i / (arr.length - 1)) * 100},${100 - (v / max) * 100}`).join(' ') : `0,${100 - (arr[0] / max) * 100} 100,${100 - (arr[0] / max) * 100}`;
-  
-  return `
-    <svg viewBox="0 0 100 100" class="chart-svg" preserveAspectRatio="none">
-      <polyline points="${points(pu)}" class="chart-line" />
-      <polyline points="${points(sq)}" class="chart-line" style="stroke: var(--accent-success)" />
-      <polyline points="${points(pl)}" class="chart-line" style="stroke: var(--accent-secondary)" />
-      ${pu.map((v, i) => `<circle cx="${(i / (Math.max(pu.length - 1, 1))) * 100}" cy="${100 - (v / max) * 100}" r="2" class="chart-point" />`).join('')}
-    </svg>
-  `;
+  return `<svg viewBox="0 0 100 100" class="chart-svg" preserveAspectRatio="none"><polyline points="${points(pu)}" class="chart-line" /><polyline points="${points(sq)}" class="chart-line" style="stroke: var(--accent-success)" /><polyline points="${points(pl)}" class="chart-line" style="stroke: var(--accent-secondary)" />${pu.map((v, i) => `<circle cx="${(i / (Math.max(pu.length - 1, 1))) * 100}" cy="${100 - (v / max) * 100}" r="2" class="chart-point" />`).join('')}</svg>`;
 }
 
 function renderCalendarGrid() {
-  const month = calendarDate.getMonth();
-  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth(), year = calendarDate.getFullYear();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDaysInMonth = new Date(year, month, 0).getDate();
-  
   const startOffset = (firstDay === 0 ? 7 : firstDay) - 1;
-  const totalCells = 42;
   let html = '';
-
-  for (let i = 0; i < totalCells; i++) {
+  for (let i = 0; i < 42; i++) {
     const dayIndex = i - startOffset + 1;
-    let currentDay, isOtherMonth = false, d;
-    
-    if (dayIndex <= 0) {
-      currentDay = prevDaysInMonth + dayIndex;
-      isOtherMonth = true;
-      d = new Date(year, month - 1, currentDay);
-    } else if (dayIndex > daysInMonth) {
-      currentDay = dayIndex - daysInMonth;
-      isOtherMonth = true;
-      d = new Date(year, month + 1, currentDay);
-    } else {
-      currentDay = dayIndex;
-      d = new Date(year, month, currentDay);
-    }
-
-    const dateKey = `sage_workout_${d.toISOString().split('T')[0]}`;
-    const saved = JSON.parse(localStorage.getItem(dateKey) || "{}");
-    const todayStr = new Date().toISOString().split('T')[0];
-    const isToday = d.toISOString().split('T')[0] === todayStr;
-    const isPast = d < new Date(todayStr);
-    const type = getDayType(d);
-    
-    let dots = [];
-    let extraClass = '';
-    
+    let d, isOtherMonth = false;
+    if (dayIndex <= 0) { d = new Date(year, month - 1, prevDaysInMonth + dayIndex); isOtherMonth = true; }
+    else if (dayIndex > daysInMonth) { d = new Date(year, month + 1, dayIndex - daysInMonth); isOtherMonth = true; }
+    else { d = new Date(year, month, dayIndex); }
+    const dateKey = getDateKey(d), saved = JSON.parse(localStorage.getItem(dateKey) || "{}"), type = getDayType(d);
+    let dots = [], extraClass = '';
     if (!isOtherMonth) {
-      if (type === "Объемная") dots.push("dot-volume");
-      else if (type === "Технический") dots.push("dot-tech");
-      
-      const isCompleted = saved.done;
-      if (isCompleted) {
-        dots.push("dot-completed");
-      } else if (isPast && type !== "Выходной") {
-        extraClass = 'missed';
-      }
-      
+      if (type === "Объемная") dots.push("dot-volume"); else if (type === "Технический") dots.push("dot-tech");
+      if (saved.done) dots.push("dot-completed"); else if (d < new Date().setHours(0,0,0,0) && type !== "Выходной") extraClass = 'missed';
       if (saved.note) dots.push("dot-note");
     }
-
-    html += `
-      <div class="day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${extraClass}">
-        ${currentDay}
-        <div class="status-dots">
-          ${dots.map(dot => `<div class="status-dot ${dot}"></div>`).join('')}
-        </div>
-      </div>
-    `;
+    html += `<div class="day-cell ${isOtherMonth ? 'other-month' : ''} ${d.toISOString().split('T')[0] === new Date().toISOString().split('T')[0] ? 'today' : ''} ${extraClass}">${d.getDate()}<div class="status-dots">${dots.map(dot => `<div class="status-dot ${dot}"></div>`).join('')}</div></div>`;
   }
   return html;
 }
 
-function getDayType(date) {
-  const day = date.getDay();
-  if ([1, 3, 5].includes(day)) return "Объем";
-  if (day === 6) return "Техника";
-  return "Отдых";
-}
-
-window.changeCalMonth = (dir) => {
-  calendarDate.setMonth(calendarDate.getMonth() + dir);
-  renderView();
-};
+window.changeCalMonth = (dir) => { calendarDate.setMonth(calendarDate.getMonth() + dir); renderView(); };
 
 function renderWarmup(state) {
-  const s = state.saved.warmup || [false, false, false, false];
-  const allChecked = s.filter(v => v).length === 4;
-  
-  return `
-    <div class="glass-card fade-in">
-      <h2>1. Разминка</h2>
-      <div class="checklist-container">
-        ${renderChecklistItem('warmup', 0, 'Суставная разминка', s[0], 'Круговые движения')}
-        ${renderChecklistItem('warmup', 1, '«Кошка-корова» (12 раз)', s[1], '«Кошка-корова»')}
-        ${renderChecklistItem('warmup', 2, '«Птица-собака» (2х10)', s[2], '«Птица-собака» (Bird-Dog)')}
-        ${renderChecklistItem('warmup', 3, 'Велосипед лежа на спине', s[3], 'Велосипед лежа на спине')}
-      </div>
-      <button class="primary-btn ${allChecked ? '' : 'locked'}" onclick="goToNextStep('warmup')">Далее</button>
-    </div>
-  `;
+  const s = state.saved.warmup || [false, false, false, false], allChecked = s.filter(v => v).length === 4;
+  return `<div class="glass-card fade-in"><h2>1. Разминка</h2><div class="checklist-container">${renderChecklistItem('warmup', 0, 'Суставная разминка', s[0], 'Круговые движения')}${renderChecklistItem('warmup', 1, '«Кошка-корова» (12 раз)', s[1], '«Кошка-корова»')}${renderChecklistItem('warmup', 2, '«Птица-собака» (2х10)', s[2], '«Птица-собака» (Bird-Dog)')}${renderChecklistItem('warmup', 3, 'Велосипед лежа на спине', s[3], 'Велосипед лежа на спине')}</div><button class="primary-btn ${allChecked ? '' : 'locked'}" onclick="goToNextStep('warmup')">Далее</button></div>`;
 }
 
 function renderMain(state) {
-  const vol = state.volume;
-  const s = state.saved.main || {};
+  const vol = state.volume, s = state.saved.main || {};
   
+  const renderSets = (exId, repsArr) => `
+    <div class="set-tiles">
+      ${repsArr.map((reps, i) => {
+        const done = s[exId] && s[exId][i];
+        return `
+          <div class="set-tile ${done ? 'completed' : ''}" 
+               onclick="toggleSet('${exId}', ${i}, this, ${reps})">
+            <span class="reps">${reps}</span>
+            <span class="label">Сет ${i+1}</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
   return `
     <div class="glass-card fade-in">
       <h2>2. Сила</h2>
@@ -653,15 +517,7 @@ function renderMain(state) {
           <h3>Отжимания («Замок»)</h3>
           <button class="info-btn" onclick="showInfo('Отжимания')">i</button>
         </div>
-        <div class="strength-inputs">
-          ${vol.pu.map((target, i) => `
-            <div class="set-row">
-              <span class="set-label">Сет ${i+1} (Цель: ${target})</span>
-              <input type="number" class="set-input" value="${s.pu && s.pu[i] ? s.pu[i] : target}" 
-                     onchange="saveStrength('pu', ${i}, this.value)">
-            </div>
-          `).join('')}
-        </div>
+        ${renderSets('pu', vol.pu)}
       </div>
 
       <div class="exercise-block" style="margin-top:30px">
@@ -669,141 +525,52 @@ function renderMain(state) {
           <h3>Приседания («Стул»)</h3>
           <button class="info-btn" onclick="showInfo('Приседания')">i</button>
         </div>
-        <div class="strength-inputs">
-          ${vol.sq.map((target, i) => `
-            <div class="set-row">
-              <span class="set-label">Сет ${i+1} (Цель: ${target})</span>
-              <input type="number" class="set-input" value="${s.sq && s.sq[i] ? s.sq[i] : target}" 
-                     onchange="saveStrength('sq', ${i}, this.value)">
-            </div>
-          `).join('')}
-        </div>
+        ${renderSets('sq', vol.sq)}
       </div>
 
-      <button class="primary-btn" onclick="goToNextStep('main')">К блоку Core</button>
+      <button class="primary-btn" style="margin-top:30px" onclick="goToNextStep('main')">К блоку Core</button>
     </div>
   `;
 }
 
 function renderCore(state) {
-  const target = state.volume.pl[0]; // Plank target
-  const isDone = state.saved.core && state.saved.core[0];
-
-  return `
-    <div class="glass-card core-timer-view fade-in">
-      <h2>3. Core</h2>
-      <div class="timer-circle ${isDone ? 'active' : ''}" id="plank-timer-circle">
-        <span class="timer-value" id="plank-timer-value">${target}</span>
-        <span class="timer-label">секунд</span>
-      </div>
-      ${isDone ? '<p class="success-msg">✅ Выполнено!</p>' : `<button class="primary-btn" id="plank-start-btn" onclick="startPlankTimer(${target})">СТАРТ</button>`}
-      <button class="primary-btn" style="margin-top:20px" onclick="goToNextStep('core')">К заминке</button>
-    </div>
-  `;
+  const target = state.volume.pl[0], isDone = state.saved.core && state.saved.core[0];
+  return `<div class="glass-card core-timer-view fade-in"><h2>3. Core</h2><div class="timer-circle ${isDone ? 'active' : ''}" id="plank-timer-circle"><span class="timer-value" id="plank-timer-value">${target}</span></div>${isDone ? '<p>✅ Готово!</p>' : `<button class="primary-btn" id="plank-start-btn" onclick="startPlankTimer(${target})">СТАРТ</button>`}<button class="primary-btn" onclick="goToNextStep('core')">Далее</button></div>`;
 }
 
 function renderCooldown(state) {
   const s = state.saved.cooldown || [false, false, false, false];
-  
-  return `
-    <div class="glass-card fade-in">
-      <h2>4. Заминка</h2>
-      <div class="checklist-container">
-        ${renderChecklistItem('cooldown', 0, 'Растяжка руки', s[0], 'Растяжка руки')}
-        ${renderChecklistItem('cooldown', 1, 'Растяжка ноги', s[1], 'Растяжка ноги')}
-        ${renderChecklistItem('cooldown', 2, 'Растяжка груди', s[2], 'Растяжка грудных')}
-        ${renderChecklistItem('cooldown', 3, 'Поза ребенка (2 мин)', s[3], 'Поза ребенка')}
-      </div>
-      
-      <section class="wellness-note-box">
-        <h3>Заметки о самочувствии</h3>
-        <textarea class="wellness-textarea" id="wellness-note" placeholder="Была ли боль? Дискомфорт?" 
-                  oninput="saveNote(this.value)">${state.saved.note || ''}</textarea>
-      </section>
-
-      <button class="primary-btn success" onclick="finishWorkout()">Завершить тренировку</button>
-    </div>
-  `;
+  return `<div class="glass-card fade-in"><h2>4. Заминка</h2><div class="checklist-container">${renderChecklistItem('cooldown', 0, 'Руки', s[0], 'Растяжка руки')}${renderChecklistItem('cooldown', 1, 'Ноги', s[1], 'Растяжка ноги')}${renderChecklistItem('cooldown', 2, 'Грудь', s[2], 'Растяжка грудных')}${renderChecklistItem('cooldown', 3, 'Поза ребенка', s[3], 'Поза ребенка')}</div><textarea class="wellness-textarea" oninput="saveNote(this.value)" placeholder="Заметки...">${state.saved.note || ''}</textarea><button class="primary-btn success" onclick="finishWorkout()">Завершить</button></div>`;
 }
 
 function renderChecklistItem(sec, idx, label, checked, infoKey) {
-  return `
-    <label class="checklist-item">
-      <input type="checkbox" onchange="saveCheck('${sec}', ${idx}, this)" ${checked ? 'checked' : ''}>
-      <span>${label}</span>
-      <button class="info-btn" onclick="showInfo('${infoKey}')">i</button>
-    </label>
-  `;
+  return `<label class="checklist-item"><input type="checkbox" onchange="saveCheck('${sec}', ${idx}, this)" ${checked ? 'checked' : ''}><span>${label}</span><button class="info-btn" onclick="showInfo('${infoKey}')">i</button></label>`;
 }
 
 window.saveStrength = (ex, idx, val) => {
-  const state = getCurrentState();
-  if (!state.saved.main) state.saved.main = {};
-  if (!state.saved.main[ex]) state.saved.main[ex] = [];
-  const numVal = parseInt(val);
-  state.saved.main[ex][idx] = numVal;
-  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
-  updateGlobalMax(ex, numVal);
-  updateSessionProgress();
+  const state = getCurrentState(); if (!state.saved.main) state.saved.main = {}; if (!state.saved.main[ex]) state.saved.main[ex] = [];
+  state.saved.main[ex][idx] = parseInt(val); localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+  updateGlobalMax(ex, parseInt(val)); updateSessionProgress();
 };
 
 window.startPlankTimer = (seconds) => {
-  const btn = document.getElementById("plank-start-btn");
-  const circle = document.getElementById("plank-timer-circle");
-  const display = document.getElementById("plank-timer-value");
-  
-  btn.style.display = "none";
-  circle.classList.add("active");
-  
-  let timeLeft = seconds;
-  const timer = setInterval(() => {
-    timeLeft--;
-    display.innerText = timeLeft;
-    if (timeLeft <= 0) {
-      clearInterval(timer);
-      playTimerSound();
-      saveCheck('core', 0, { checked: true });
-      goToStep('core'); // Re-render to show success
-    }
-  }, 1000);
+  const display = document.getElementById("plank-timer-value"); document.getElementById("plank-start-btn").style.display = "none";
+  let timeLeft = seconds; const timer = setInterval(() => { timeLeft--; display.innerText = timeLeft; if (timeLeft <= 0) { clearInterval(timer); playTimerSound(); saveCheck('core', 0, { checked: true }); goToStep('core'); } }, 1000);
 };
 
-function updateGlobalMax(exercise, reps) {
-  const key = `sage_max_${exercise}`;
-  const currentMax = parseInt(localStorage.getItem(key) || 0);
-  if (reps > currentMax) {
-    localStorage.setItem(key, reps);
-  }
-}
+function updateGlobalMax(ex, reps) { const key = `sage_max_${ex}`, cur = parseInt(localStorage.getItem(key) || 0); if (reps > cur) localStorage.setItem(key, reps); }
 
 window.goToNextStep = (current) => {
-  const steps = {
-    'warmup': 'main',
-    'main': 'core',
-    'core': 'cooldown'
-  };
-  
-  // Skip Strength (main) if not volume/technical
-  const state = getCurrentState();
-  let next = steps[current];
-  if (next === 'main' && state.type === 'Восстановление') next = 'core';
-  
+  const steps = { 'warmup': 'main', 'main': 'core', 'core': 'cooldown' };
+  const state = getCurrentState(); let next = steps[current]; if (next === 'main' && state.type === 'Восстановление') next = 'core';
   goToStep(next);
 };
 
-
-window.saveNote = (text) => {
-  const state = getCurrentState();
-  state.saved.note = text;
-  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
-};
+window.saveNote = (text) => { const state = getCurrentState(); state.saved.note = text; localStorage.setItem(state.dateKey, JSON.stringify(state.saved)); };
 
 window.saveCheck = (sec, idx, el) => {
-  const state = getCurrentState();
-  if (!state.saved[sec]) state.saved[sec] = [];
-  state.saved[sec][idx] = el.checked;
-  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
-  updateSessionProgress();
+  const state = getCurrentState(); if (!state.saved[sec]) state.saved[sec] = []; state.saved[sec][idx] = el.checked;
+  localStorage.setItem(state.dateKey, JSON.stringify(state.saved)); updateSessionProgress();
 };
 
 window.toggleSet = (exId, idx, el, reps) => {
@@ -817,29 +584,23 @@ window.toggleSet = (exId, idx, el, reps) => {
     localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
     updateSessionProgress();
   } else {
-    startExecution(exId, idx, el, reps);
+    // Show execution overlay
+    const overlay = document.createElement("div");
+    overlay.className = "execution-overlay fade-in";
+    overlay.innerHTML = `
+      <div class="execution-box">
+        <h2>Выполняю</h2>
+        <div class="execution-reps">${reps}</div>
+        <button class="finish-set-btn" onclick="finishExecution('${exId}', ${idx}, ${reps})">ЗАВЕРШИТЬ</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.targetEl = el;
   }
 };
 
-function startExecution(exId, idx, el, reps) {
-  const overlay = document.createElement("div");
-  overlay.className = "execution-overlay fade-in";
-  overlay.id = "execution-overlay";
-  overlay.innerHTML = `
-    <div class="execution-box">
-      <h2>Выполняю</h2>
-      <div class="execution-reps">${reps}</div>
-      <button class="finish-set-btn" onclick="finishExecution('${exId}', ${idx}, this)">ЗАВЕРШИТЬ</button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  
-  // Store the target element on the overlay for access during finish
-  overlay.targetEl = el;
-}
-
-window.finishExecution = (exId, idx, btn) => {
-  const overlay = document.getElementById("execution-overlay");
+window.finishExecution = (exId, idx, reps) => {
+  const overlay = document.querySelector(".execution-overlay");
   const el = overlay.targetEl;
   const state = getCurrentState();
   
@@ -852,27 +613,26 @@ window.finishExecution = (exId, idx, btn) => {
   
   overlay.remove();
   updateSessionProgress();
-  startTimer(60);
+  updateGlobalMax(exId, reps);
+  startTimer(60); // 60s rest
 };
 
-window.goToStep = (step) => {
-  const content = document.getElementById("workout-content");
-  const state = getCurrentState();
-  if (step === 'warmup') content.innerHTML = renderWarmup(state);
-  else if (step === 'main') content.innerHTML = renderMain(state);
-  else if (step === 'cooldown') content.innerHTML = renderCooldown(state);
-  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.step === step));
-};
-
-let timerInterval;
+let restTimer;
 function startTimer(seconds) {
   let timeLeft = seconds;
   const overlay = document.createElement("div");
   overlay.className = "timer-overlay";
   document.body.appendChild(overlay);
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    overlay.innerHTML = `<div class="timer-box">Отдых: ${timeLeft}с <button onclick="closeTimer()">Пропустить</button></div>`;
+  
+  clearInterval(restTimer);
+  restTimer = setInterval(() => {
+    overlay.innerHTML = `
+      <div class="timer-box">
+        <h2>Отдых</h2>
+        <div class="timer-val">${timeLeft}</div>
+        <button class="skip-timer-btn" onclick="closeTimer()">ПРОПУСТИТЬ</button>
+      </div>
+    `;
     if (timeLeft-- <= 0) {
       playTimerSound();
       closeTimer();
@@ -881,61 +641,37 @@ function startTimer(seconds) {
 }
 
 window.closeTimer = () => {
-  clearInterval(timerInterval);
+  clearInterval(restTimer);
   const overlay = document.querySelector(".timer-overlay");
   if (overlay) overlay.remove();
 };
 
-window.finishWorkout = () => {
-  const state = getCurrentState();
-  state.saved.done = true;
-  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
-  location.reload();
+window.goToStep = (step) => {
+  const content = document.getElementById("workout-content"), state = getCurrentState();
+  if (step === 'warmup') content.innerHTML = renderWarmup(state);
+  else if (step === 'main') content.innerHTML = renderMain(state);
+  else if (step === 'core') content.innerHTML = renderCore(state);
+  else if (step === 'cooldown') content.innerHTML = renderCooldown(state);
+  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.step === step));
+  updateSessionProgress();
 };
 
-window.resetWorkout = () => {
-  const state = getCurrentState();
-  state.saved.done = false;
-  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
-  renderView();
-};
+function setupNav() { document.querySelectorAll(".nav-btn").forEach(btn => btn.onclick = () => goToStep(btn.dataset.step)); }
 
-function setupNav() {
-  document.querySelectorAll(".nav-btn").forEach(btn => btn.onclick = () => goToStep(btn.dataset.step));
-}
-
-// Notifications Logic
-async function requestNotificationPermission() {
-  if (!("Notification" in window)) return;
-  if (Notification.permission === "default") {
-    await Notification.requestPermission();
-  }
-}
+async function requestNotificationPermission() { if (!("Notification" in window)) return; if (Notification.permission === "default") await Notification.requestPermission(); }
 
 function checkAndSendReminder(state) {
   if (state.type === "Выходной" || state.saved.done) return;
-  
-  const now = new Date();
-  if (now.getHours() >= 8) {
-    const lastNotified = localStorage.getItem("sage_last_notified");
-    const todayStr = now.toISOString().split('T')[0];
-    
-    if (lastNotified !== todayStr && Notification.permission === "granted") {
-      new Notification("SAGEWorkOut", {
-        body: `Михаил, пора двигаться к сотне. Сегодня: ${state.type}`,
-        icon: "./assets/icon-192.png"
-      });
-      localStorage.setItem("sage_last_notified", todayStr);
+  if (new Date().getHours() >= 8) {
+    const last = localStorage.getItem("sage_last_notified"), today = new Date().toISOString().split('T')[0];
+    if (last !== today && Notification.permission === "granted") {
+      new Notification("SAGEWorkOut", { body: `Пора тренироваться! Состояние: ${state.type}`, icon: "./assets/icon-192.png" });
+      localStorage.setItem("sage_last_notified", today);
     }
   }
 }
 
-// Service Worker Registration
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW Registered', reg))
-      .catch(err => console.log('SW Error', err));
-  });
-}
+window.finishWorkout = () => { const state = getCurrentState(); state.saved.done = true; localStorage.setItem(state.dateKey, JSON.stringify(state.saved)); location.reload(); };
+window.resetWorkout = () => { const state = getCurrentState(); state.saved.done = false; localStorage.setItem(state.dateKey, JSON.stringify(state.saved)); renderView(); };
 
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); }); }
