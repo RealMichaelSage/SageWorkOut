@@ -621,8 +621,17 @@ window.goToNextStep = (current) => {
 window.saveNote = (text) => { const state = getCurrentState(); state.saved.note = text; localStorage.setItem(state.dateKey, JSON.stringify(state.saved)); };
 
 window.saveCheck = (sec, idx, el) => {
-  const state = getCurrentState(); if (!state.saved[sec]) state.saved[sec] = []; state.saved[sec][idx] = el.checked;
-  localStorage.setItem(state.dateKey, JSON.stringify(state.saved)); updateSessionProgress();
+  const state = getCurrentState();
+  if (!state.saved[sec]) state.saved[sec] = [];
+  state.saved[sec][idx] = el.checked;
+  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+  updateSessionProgress();
+  
+  // Refresh the current view to update button states (unlocked/locked)
+  const activeBtn = document.querySelector(".nav-btn.active");
+  if (activeBtn && activeBtn.dataset.step === sec) {
+    goToStep(sec);
+  }
 };
 
 window.toggleSet = (exId, idx, el, reps) => {
