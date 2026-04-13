@@ -519,12 +519,6 @@ function renderMain(state) {
       <h2>2. Сила и Core</h2>
       <p class="warning-banner">⚠️ <strong>Техника превыше всего!</strong> Если локоть покалывает — не разгибай до щелчка.</p>
       
-      <div id="plank-active-timer" style="display:none; margin: 20px 0;">
-        <div class="timer-circle active">
-          <span class="timer-value" id="plank-timer-value">0</span>
-        </div>
-      </div>
-
       <div class="exercise-block">
         <div class="exercise-header-row">
           <h3>Отжимания («Замок»)</h3>
@@ -577,38 +571,68 @@ window.togglePlankSet = (idx, el, seconds) => {
       if (!state.saved.core) state.saved.core = [];
       state.saved.core[idx] = false;
       localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
-      goToStep('core');
+      goToStep('main');
     }
   } else {
-    document.getElementById("plank-tiles-container").style.display = "none";
-    document.getElementById("plank-active-timer").style.display = "block";
-    startPlankTimer(seconds, idx);
+    // Show execution overlay with timer
+    const overlay = document.createElement("div");
+    overlay.className = "execution-overlay fade-in";
+    overlay.innerHTML = `
+      <div class="execution-box">
+        <h2>Планка</h2>
+        <div class="execution-reps" id="plank-popup-timer">${seconds}</div>
+        <p style="color:var(--text-muted)">Держи спину ровно!</p>
+        <button class="finish-set-btn" onclick="skipPlankTimer(${idx}, ${seconds})">ЗАВЕРШИТЬ ДОСРОЧНО</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.targetEl = el;
+    startPlankTimer(seconds, idx, overlay);
   }
 };
 
-window.startPlankTimer = (seconds, idx) => {
-  const display = document.getElementById("plank-timer-value");
+window.skipPlankTimer = (idx, seconds) => {
+  // Logic to stop current interval if needed
+  // For simplicity, we can let startPlankTimer handle the completion
+  // but if we want instant skip:
+  const event = new CustomEvent('skipPlank', { detail: { idx, seconds } });
+  window.dispatchEvent(event);
+};
+
+window.startPlankTimer = (seconds, idx, overlay) => {
+  const display = document.getElementById("plank-popup-timer");
   let timeLeft = seconds;
-  display.innerText = timeLeft;
   
   const timer = setInterval(() => {
     timeLeft--;
-    display.innerText = timeLeft;
+    if (display) display.innerText = timeLeft;
+    
     if (timeLeft <= 0) {
-      clearInterval(timer);
-      playTimerSound();
-      
-      const state = getCurrentState();
-      if (!state.saved.core) state.saved.core = [];
-      state.saved.core[idx] = true;
-      localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
-      
-      // Return to tiles view
-      goToStep('core');
-      startTimer(60); // Rest between plank sets
+      finishPlank(timer, overlay, idx, seconds);
     }
   }, 1000);
+
+  window.addEventListener('skipPlank', (e) => {
+    if (e.detail.idx === idx) {
+      finishPlank(timer, overlay, idx, seconds);
+    }
+  }, { once: true });
 };
+
+function finishPlank(timer, overlay, idx, seconds) {
+  clearInterval(timer);
+  playTimerSound();
+  
+  const state = getCurrentState();
+  if (!state.saved.core) state.saved.core = [];
+  state.saved.core[idx] = true;
+  localStorage.setItem(state.dateKey, JSON.stringify(state.saved));
+  
+  overlay.remove();
+  updateSessionProgress();
+  if (overlay.targetEl) overlay.targetEl.classList.add("completed");
+  startTimer(60); 
+}
 
 function updateGlobalMax(ex, reps) { const key = `sage_max_${ex}`, cur = parseInt(localStorage.getItem(key) || 0); if (reps > cur) localStorage.setItem(key, reps); }
 
