@@ -782,13 +782,13 @@ input[type="checkbox"] {
 
 /* Success Screen */
 .success-view {
-  min-height: 400px;
+  min-height: 300px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 40px 20px;
+  padding: 20px;
   animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
